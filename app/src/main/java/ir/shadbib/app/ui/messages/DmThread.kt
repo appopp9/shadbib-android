@@ -51,8 +51,6 @@ import androidx.compose.material.icons.rounded.Reply
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.Chat
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -91,14 +89,15 @@ import ir.shadbib.app.core.fa
 import ir.shadbib.app.data.DmMessage
 import ir.shadbib.app.ui.components.Avatar
 import ir.shadbib.app.ui.components.EmptyState
-import ir.shadbib.app.ui.components.ColumnScopeGlass
-import ir.shadbib.app.ui.components.GlassAction
-import ir.shadbib.app.ui.components.GlassDivider
-import ir.shadbib.app.ui.components.GlassMenu
-import ir.shadbib.app.ui.components.GlassReactions
 import ir.shadbib.app.ui.components.LoadingBox
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import ir.shadbib.app.ui.components.GlassMenu
+import ir.shadbib.app.ui.components.GlassAction
+import ir.shadbib.app.ui.components.GlassDivider
+import ir.shadbib.app.ui.components.GlassReactions
+import androidx.compose.material.icons.rounded.Download
+import ir.shadbib.app.ui.components.ColumnScopeGlass
 
 @Composable
 fun DmThreadScreen(username: String, onBack: () -> Unit, vm: DmThreadViewModel = viewModel(key = "dm_" + username)) {

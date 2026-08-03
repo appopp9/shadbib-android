@@ -158,7 +158,10 @@ fun MainScaffold() {
                 composable("library") { LibraryScreen() }
                 composable("profile") { ProfileScreen() }
             }
-            StudyFloatingBar(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp)) { NavBus.requestStudy() }
+            // در اتاق مطالعه نوار شناور پنهان می‌شود — آن صفحه تایمر خودش را دارد
+            if (currentRoute != "room") {
+                StudyFloatingBar(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp)) { NavBus.requestStudy() }
+            }
         }
     }
 

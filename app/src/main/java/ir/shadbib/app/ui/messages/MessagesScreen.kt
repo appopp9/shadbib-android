@@ -23,9 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.automirrored.rounded.Send
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.rounded.HelpOutline
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Search
@@ -59,13 +56,16 @@ import ir.shadbib.app.data.StudyGroup
 import ir.shadbib.app.ui.community.GroupChatScreen
 import ir.shadbib.app.ui.components.Avatar
 import ir.shadbib.app.ui.components.EmptyState
-import ir.shadbib.app.ui.components.ColumnScopeGlass
-import ir.shadbib.app.ui.components.GlassAction
-import ir.shadbib.app.ui.components.GlassDivider
-import ir.shadbib.app.ui.components.GlassMenu
-import ir.shadbib.app.ui.components.GlassReactions
 import ir.shadbib.app.ui.components.LoadingBox
 import kotlinx.coroutines.delay
+import ir.shadbib.app.ui.components.GlassMenu
+import ir.shadbib.app.ui.components.GlassAction
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material3.IconButton
+import ir.shadbib.app.ui.components.ColumnScopeGlass
+import ir.shadbib.app.ui.components.GlassDivider
+import ir.shadbib.app.ui.components.GlassReactions
 
 private sealed class MsgRoute {
     object Inbox : MsgRoute()
@@ -148,8 +148,8 @@ fun MessagesScreen(vm: MessagesViewModel = viewModel()) {
 private fun InboxScreen(vm: MessagesViewModel, onOpenDm: (String) -> Unit, onOpenChannel: (String, String, String) -> Unit, onOpenGroup: (Int, String) -> Unit, onOpenGroupsHome: () -> Unit) {
     val state by vm.state.collectAsState()
     val prefs by ir.shadbib.app.core.Store.prefs.collectAsState()
+    val gMeta by vm.groupMeta.collectAsState()
     val channelMeta by vm.channelMeta.collectAsState()
-    val groupMeta by vm.groupMeta.collectAsState()
     var chatMenu by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { while (true) { vm.poll(); delay(7000) } }
     LaunchedEffect(Unit) { ir.shadbib.app.core.RefreshBus.events.collect { if (it == "dm" || it == "groups" || it == "all") vm.poll() } }
@@ -194,7 +194,7 @@ private fun InboxScreen(vm: MessagesViewModel, onOpenDm: (String) -> Unit, onOpe
                         // ادغام تلگرامی: پیوی‌ها و گروه‌ها با هم، مرتب بر اساس آخرین پیام (پین‌ها اول)
                         val entries: List<InboxEntry> =
                             state.conversations.map { c -> InboxEntry.Dm(c, c.lastTime) } +
-                            state.groups.map { g -> InboxEntry.Grp(g, groupMeta[g.id]?.time) }
+                            state.groups.map { g -> InboxEntry.Grp(g, gMeta[g.id]?.time) }
                         val sorted = entries.sortedWith(
                             compareByDescending<InboxEntry> { e ->
                                 val key = when (e) { is InboxEntry.Dm -> "dm:" + e.c.username; is InboxEntry.Grp -> "grp:" + e.g.id }
@@ -208,7 +208,7 @@ private fun InboxScreen(vm: MessagesViewModel, onOpenDm: (String) -> Unit, onOpe
                                         onClick = { onOpenDm(e.c.username) },
                                         onLongClick = { chatMenu = e.c.username })
                                     is InboxEntry.Grp -> {
-                                        val gm = groupMeta[e.g.id]
+                                        val gm = gMeta[e.g.id]
                                         GroupInboxRow(e.g.name, gm?.sender, gm?.last, gm?.time, gm?.unread ?: 0, gm?.mention == true,
                                             pinned = prefs.pinned.contains("grp:" + e.g.id),
                                             onClick = { onOpenGroup(e.g.id, e.g.name) },
@@ -336,9 +336,9 @@ private fun GroupInboxRow(name: String, sender: String?, last: String?, time: St
                     Text(name, style = MaterialTheme.typography.titleSmall)
                     if (pinned) { Spacer(Modifier.width(6.dp)); Text("📌", style = MaterialTheme.typography.labelSmall) }
                 }
-                Text((if (last != null) (sender ?: "") + ": " + last else "گروه مطالعه"),
-                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(if (last != null) ((sender ?: "") + ": " + last) else "گروه مطالعه",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 if (time != null) Text(Fmt.relative(time), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

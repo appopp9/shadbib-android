@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,21 +34,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ContentCopy
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.Notifications
-import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Reply
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.PersonRemove
 import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -64,7 +57,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -88,11 +80,6 @@ import ir.shadbib.app.data.GroupMessage
 import ir.shadbib.app.data.StudyGroup
 import ir.shadbib.app.ui.components.Avatar
 import ir.shadbib.app.ui.components.EmptyState
-import ir.shadbib.app.ui.components.ColumnScopeGlass
-import ir.shadbib.app.ui.components.GlassAction
-import ir.shadbib.app.ui.components.GlassDivider
-import ir.shadbib.app.ui.components.GlassMenu
-import ir.shadbib.app.ui.components.GlassReactions
 import ir.shadbib.app.ui.components.LoadingBox
 import ir.shadbib.app.ui.components.ProgressRow
 import ir.shadbib.app.ui.components.userColor
@@ -112,6 +99,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import ir.shadbib.app.ui.components.GlassMenu
+import ir.shadbib.app.ui.components.GlassAction
+import ir.shadbib.app.ui.components.GlassDivider
+import ir.shadbib.app.ui.components.GlassReactions
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.runtime.mutableIntStateOf
 
 class GroupsViewModel : ViewModel() {
     val groups = MutableStateFlow<List<StudyGroup>>(emptyList())
@@ -461,7 +457,7 @@ private fun GroupBubble(m: GroupMessage, isMine: Boolean, onLongPress: () -> Uni
                         Surface(shape = CircleShape,
                             color = if (r.mine) MaterialTheme.colorScheme.primary.copy(alpha = 0.28f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
                             border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = if (r.mine) 0.3f else 0.12f))) {
-                            Text((r.emoji + if (r.count > 1) " " + r.count.fa() else "").trim(),
+                            Text((r.emoji + " " + (if (r.count > 1) r.count.fa() else "")).trim(),
                                 style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp))
                         }
                     }

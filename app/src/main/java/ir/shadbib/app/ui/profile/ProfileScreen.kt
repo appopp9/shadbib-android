@@ -66,8 +66,6 @@ import ir.shadbib.app.notify.Reminder
 import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.NotificationsActive
-import androidx.compose.material.icons.rounded.Notifications
-import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.TimePicker
@@ -88,11 +86,6 @@ import ir.shadbib.app.data.ProfileData
 import ir.shadbib.app.player.PlayerHolder
 import ir.shadbib.app.ui.components.AppCard
 import ir.shadbib.app.ui.components.Avatar
-import ir.shadbib.app.ui.components.ColumnScopeGlass
-import ir.shadbib.app.ui.components.GlassAction
-import ir.shadbib.app.ui.components.GlassDivider
-import ir.shadbib.app.ui.components.GlassMenu
-import ir.shadbib.app.ui.components.GlassReactions
 import ir.shadbib.app.ui.components.EmptyState
 import ir.shadbib.app.ui.components.ErrorState
 import ir.shadbib.app.ui.components.LoadingBox
@@ -106,6 +99,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import ir.shadbib.app.ui.components.GlassMenu
+import ir.shadbib.app.ui.components.GlassAction
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.ui.draw.clip
+import ir.shadbib.app.ui.components.ColumnScopeGlass
+import ir.shadbib.app.ui.components.GlassDivider
+import ir.shadbib.app.ui.components.GlassReactions
 
 class ProfileViewModel : ViewModel() {
     data class State(

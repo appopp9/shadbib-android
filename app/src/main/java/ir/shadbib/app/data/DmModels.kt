@@ -24,11 +24,9 @@ data class Conversation(
 ) {
     companion object {
         fun from(o: JSONObject) = Conversation(
-            o.str("username"), o.str("mood").ifEmpty { "😊" }, o.strOrNull("last_seen"),
-            null,
-            o.boolish("is_online"), o.strOrNull("avatar"), o.str("last_message"),
-            o.str("last_type").ifEmpty { "text" }, o.str("last_time"),
-            o.boolish("last_from_me"), o.int("unread"),
+            o.str("username"), o.str("mood").ifEmpty { "😊" }, o.strOrNull("last_seen"), null,
+            o.boolish("is_online"), o.strOrNull("avatar"), o.str("last_message"), o.str("last_type").ifEmpty { "text" },
+            o.str("last_time"), o.boolish("last_from_me"), o.int("unread"),
         )
         fun list(a: JSONArray) = a.objects().map { from(it) }
     }

@@ -39,8 +39,6 @@ import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.Chat
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -78,11 +76,6 @@ import ir.shadbib.app.data.FriendDetail
 import ir.shadbib.app.core.fa
 import ir.shadbib.app.ui.components.Avatar
 import ir.shadbib.app.ui.components.EmptyState
-import ir.shadbib.app.ui.components.ColumnScopeGlass
-import ir.shadbib.app.ui.components.GlassAction
-import ir.shadbib.app.ui.components.GlassDivider
-import ir.shadbib.app.ui.components.GlassMenu
-import ir.shadbib.app.ui.components.GlassReactions
 import ir.shadbib.app.ui.components.LoadingBox
 import ir.shadbib.app.ui.components.ProgressRow
 import ir.shadbib.app.ui.components.StatPill
@@ -91,6 +84,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import ir.shadbib.app.ui.components.GlassMenu
+import ir.shadbib.app.ui.components.GlassAction
+import ir.shadbib.app.ui.components.GlassDivider
+import ir.shadbib.app.ui.components.GlassReactions
+import androidx.compose.material.icons.rounded.Download
+import ir.shadbib.app.ui.components.ColumnScopeGlass
 
 class ChannelChatViewModel : ViewModel() {
     var channel: String = "public"
@@ -323,7 +322,7 @@ private fun ChannelBubble(m: ChatMessage, isMine: Boolean, onLongPress: () -> Un
                         Surface(shape = CircleShape,
                             color = if (r.mine) MaterialTheme.colorScheme.primary.copy(alpha = 0.28f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
                             border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = if (r.mine) 0.3f else 0.12f))) {
-                            Text((r.emoji + if (r.count > 1) " " + r.count.fa() else "").trim(),
+                            Text((r.emoji + " " + (if (r.count > 1) r.count.fa() else "")).trim(),
                                 style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp))
                         }
                     }

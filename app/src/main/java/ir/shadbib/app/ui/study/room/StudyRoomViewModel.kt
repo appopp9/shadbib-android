@@ -22,6 +22,9 @@ import org.json.JSONObject
  * روی هاست اشتراکی PHP وب‌ساکت نداریم؛ پس حضور با «ضربان» هر [BEAT_SEC] ثانیه
  * نگه داشته می‌شود. همان یک درخواست هم وضعیت ما را می‌فرستد و هم لیست بقیه را
  * برمی‌گرداند — یعنی یک رفت‌وبرگشت در هر چرخه، نه دو تا.
+ *
+ * حضور فقط تا وقتی ادامه دارد که کاربر روی این صفحه و اپ جلوی چشمش باشد؛
+ * صفحه که عوض شود یا اپ برود پس‌زمینه، [leave] صدا می‌شود.
  */
 class StudyRoomViewModel : ViewModel() {
 
@@ -39,10 +42,20 @@ class StudyRoomViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> get() = _error
 
-    private var beatJob: Job? = null
+    /**
+     * وضعیت خودمان، به صورت StateFlow.
+     *
+     * قبلاً این یک تابع ساده بود که در حین ترکیب صدا می‌شد. مشکلش این بود که
+     * `Chrono.running` یک مقدار معمولی است نه State؛ پس Compose نمی‌فهمید که عوض شده
+     * و کاراکتر در حالت بیکار می‌ماند. حالا هر ثانیه خوانده و در فلو ریخته می‌شود.
+     */
+    private val _myState = MutableStateFlow(RoomState.IDLE)
+    val myState: StateFlow<String> get() = _myState
 
-    /** وضعیت فعلی خودمان — از روی تایمرهای موجود اپ حساب می‌شود. */
-    fun myState(): String {
+    private var beatJob: Job? = null
+    private var watchJob: Job? = null
+
+    private fun computeMyState(): String {
         val p = Pomodoro.state.value
         return when {
             p.running && p.phase == Pomodoro.Phase.WORK -> RoomState.STUDYING
@@ -52,18 +65,38 @@ class StudyRoomViewModel : ViewModel() {
     }
 
     fun enter() {
-        if (beatJob?.isActive == true) return
-        beatJob = viewModelScope.launch {
-            while (isActive) {
-                beat()
-                delay(BEAT_SEC * 1000)
+        _myState.value = computeMyState()
+
+        if (beatJob?.isActive != true) {
+            beatJob = viewModelScope.launch {
+                while (isActive) {
+                    beat()
+                    delay(BEAT_SEC * 1000)
+                }
+            }
+        }
+
+        // ناظر یک‌ثانیه‌ای: تا تایمر را بزنی کاراکتر فوراً عوض می‌شود و
+        // همان لحظه یک ضربان می‌رود تا بقیه هم زود ببینند.
+        if (watchJob?.isActive != true) {
+            watchJob = viewModelScope.launch {
+                while (isActive) {
+                    val s = computeMyState()
+                    if (s != _myState.value) {
+                        _myState.value = s
+                        beat()
+                    }
+                    delay(1000)
+                }
             }
         }
     }
 
+    /** خروج از اتاق — صفحه عوض شد یا اپ رفت پس‌زمینه. */
     fun leave() {
-        beatJob?.cancel()
-        beatJob = null
+        beatJob?.cancel(); beatJob = null
+        watchJob?.cancel(); watchJob = null
+        _snapshot.value = RoomSnapshot()
         viewModelScope.launch {
             runCatching { Api.post("room_leave", JSONObject().put("room_id", PUBLIC_ROOM)) }
         }
@@ -71,13 +104,14 @@ class StudyRoomViewModel : ViewModel() {
 
     /** ضربان دستی — بعد از استارت/استاپ تایمر تا وضعیت فوری در اتاق عوض شود. */
     fun pulse() {
+        _myState.value = computeMyState()
         viewModelScope.launch { beat() }
     }
 
     private suspend fun beat() {
         val body = JSONObject()
             .put("room_id", PUBLIC_ROOM)
-            .put("state", myState())
+            .put("state", _myState.value)
             .put("character", _character.value)
         runCatching { Api.obj(Api.post("room_beat", body)) }
             .onSuccess { o ->
@@ -119,5 +153,6 @@ class StudyRoomViewModel : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         beatJob?.cancel()
+        watchJob?.cancel()
     }
 }

@@ -1,4 +1,4 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 
 package ir.shadbib.app.ui.profile
 
@@ -66,6 +66,8 @@ import ir.shadbib.app.notify.Reminder
 import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.NotificationsActive
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.TimePicker
@@ -86,6 +88,10 @@ import ir.shadbib.app.data.ProfileData
 import ir.shadbib.app.player.PlayerHolder
 import ir.shadbib.app.ui.components.AppCard
 import ir.shadbib.app.ui.components.Avatar
+import GlassAction
+import GlassDivider
+import GlassMenu
+import GlassReactions
 import ir.shadbib.app.ui.components.EmptyState
 import ir.shadbib.app.ui.components.ErrorState
 import ir.shadbib.app.ui.components.LoadingBox
@@ -217,10 +223,10 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
                 }
                 val avScope = rememberCoroutineScope()
                 if (avatarMenu) {
-                    ir.shadbib.app.ui.components.GlassMenu(onDismiss = { avatarMenu = false }) {
-                        ir.shadbib.app.ui.components.GlassAction(Icons.Rounded.PhotoCamera, "تغییر عکس پروفایل") { avPick.launch("image/*") }
+                    GlassMenu(onDismiss = { avatarMenu = false }) {
+                        GlassAction(Icons.Rounded.PhotoCamera, "تغییر عکس پروفایل") { avPick.launch("image/*") }
                         if (state.profile.avatar != null) {
-                            ir.shadbib.app.ui.components.GlassAction(Icons.Rounded.Delete, "حذف عکس", danger = true) {
+                            GlassAction(Icons.Rounded.Delete, "حذف عکس", danger = true) {
                                 avScope.launch {
                                     runCatching { Api.post("avatar_delete", org.json.JSONObject()) }
                                         .onSuccess { ir.shadbib.app.core.Store.setAvatar(null); vm.refresh() }

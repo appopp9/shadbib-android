@@ -23,6 +23,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.automirrored.rounded.Send
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material3.IconButton
 import androidx.compose.material.icons.rounded.HelpOutline
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Search
@@ -56,6 +59,10 @@ import ir.shadbib.app.data.StudyGroup
 import ir.shadbib.app.ui.community.GroupChatScreen
 import ir.shadbib.app.ui.components.Avatar
 import ir.shadbib.app.ui.components.EmptyState
+import GlassAction
+import GlassDivider
+import GlassMenu
+import GlassReactions
 import ir.shadbib.app.ui.components.LoadingBox
 import kotlinx.coroutines.delay
 
@@ -225,10 +232,10 @@ private fun InboxScreen(vm: MessagesViewModel, onOpenDm: (String) -> Unit, onOpe
 
     chatMenu?.let { cu ->
         val key = if (cu.startsWith("grp:")) cu else "dm:" + cu
-        ir.shadbib.app.ui.components.GlassMenu(onDismiss = { chatMenu = null }) {
-            ir.shadbib.app.ui.components.GlassAction(Icons.Rounded.PushPin,
+        GlassMenu(onDismiss = { chatMenu = null }) {
+            GlassAction(Icons.Rounded.PushPin,
                 if (prefs.pinned.contains(key)) "برداشتن پین" else "پین کردن") { ir.shadbib.app.core.Store.togglePin(key) }
-            ir.shadbib.app.ui.components.GlassAction(Icons.Rounded.NotificationsOff,
+            GlassAction(Icons.Rounded.NotificationsOff,
                 if (prefs.muted.contains(key)) "صدادار کردن" else "بی‌صدا کردن") { ir.shadbib.app.core.Store.toggleMute(key) }
         }
     }
@@ -328,9 +335,9 @@ private fun GroupInboxRow(name: String, sender: String?, last: String?, time: St
                     Text(name, style = MaterialTheme.typography.titleSmall)
                     if (pinned) { Spacer(Modifier.width(6.dp)); Text("📌", style = MaterialTheme.typography.labelSmall) }
                 }
-                Text(if (last != null) "${'$'}{sender ?: ""}: ${'$'}last" else "گروه مطالعه",
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text((if (last != null) (sender ?: "") + ": " + last else "گروه مطالعه"),
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 if (time != null) Text(Fmt.relative(time), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

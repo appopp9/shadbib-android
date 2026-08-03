@@ -320,24 +320,6 @@ fun EmptyState(emoji: String, text: String, modifier: Modifier = Modifier) {
     }
 }
 
-@Composable
-fun ErrorState(message: String, onRetry: (() -> Unit)? = null, modifier: Modifier = Modifier) {
-    Column(
-        modifier.fillMaxWidth().padding(vertical = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Text("😕", fontSize = 36.sp)
-        Text(
-            message,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
-            textAlign = TextAlign.Center,
-        )
-        if (onRetry != null) GradientButton("تلاش دوباره", onClick = onRetry)
-    }
-}
-
 private val avatarPalette = listOf(
     Color(0xFF4ADE9F), Color(0xFF38BDF8), Color(0xFFA78BFA), Color(0xFFFB7185),
     Color(0xFFFBBF24), Color(0xFF2DD4BF), Color(0xFFF472B6), Color(0xFF818CF8),

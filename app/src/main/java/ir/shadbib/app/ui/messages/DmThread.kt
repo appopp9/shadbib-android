@@ -51,6 +51,8 @@ import androidx.compose.material.icons.rounded.Reply
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Chat
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -89,6 +91,10 @@ import ir.shadbib.app.core.fa
 import ir.shadbib.app.data.DmMessage
 import ir.shadbib.app.ui.components.Avatar
 import ir.shadbib.app.ui.components.EmptyState
+import GlassAction
+import GlassDivider
+import GlassMenu
+import GlassReactions
 import ir.shadbib.app.ui.components.LoadingBox
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -246,18 +252,18 @@ fun DmThreadScreen(username: String, onBack: () -> Unit, vm: DmThreadViewModel =
     actionMsg?.let { m ->
         val clip = androidx.compose.ui.platform.LocalClipboardManager.current
         val mine = m.sender == me
-        ir.shadbib.app.ui.components.GlassMenu(onDismiss = { actionMsg = null }) {
-            ir.shadbib.app.ui.components.GlassReactions(mineEmoji = m.reactions.firstOrNull { it.mine }?.emoji) { em -> vm.react(m.id, em) }
-            ir.shadbib.app.ui.components.GlassDivider()
-            ir.shadbib.app.ui.components.GlassAction(Icons.Rounded.Reply, "پاسخ") { replyTo = m }
-            ir.shadbib.app.ui.components.GlassAction(Icons.AutoMirrored.Rounded.Send, "هدایت") { forwardMsg = m }
-            if (m.type == "text" && m.message.isNotBlank()) {
-                ir.shadbib.app.ui.components.GlassAction(Icons.Rounded.ContentCopy, "کپی متن") {
-                    clip.setText(androidx.compose.ui.text.AnnotatedString(m.message))
+        GlassMenu(onDismiss = { actionMsg = null }) {
+            GlassReactions(mineEmoji = m.reactions.firstOrNull { it.mine }?.emoji) { em -> vm.react(m.id, em) }
+            GlassDivider()
+            GlassAction(Icons.Rounded.Reply, "پاسخ") { replyTo = m }
+            GlassAction(Icons.AutoMirrored.Rounded.Send, "هدایت") { forwardMsg = m }
+            if (m.type == "text" && !m.message.isNullOrBlank()) {
+                GlassAction(Icons.Rounded.ContentCopy, "کپی متن") {
+                    clip.setText(androidx.compose.ui.text.AnnotatedString(m.message ?: ""))
                 }
             }
-            if (mine && m.type == "text") ir.shadbib.app.ui.components.GlassAction(Icons.Rounded.Edit, "ویرایش") { editMsg = m }
-            if (mine) ir.shadbib.app.ui.components.GlassAction(Icons.Rounded.Delete, "حذف پیام", danger = true) { vm.delete(m.id) }
+            if (mine && m.type == "text") GlassAction(Icons.Rounded.Edit, "ویرایش") { editMsg = m }
+            if (mine) GlassAction(Icons.Rounded.Delete, "حذف پیام", danger = true) { vm.delete(m.id) }
         }
     }
 

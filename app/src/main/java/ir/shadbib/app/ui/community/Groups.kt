@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -34,15 +35,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Reply
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.PersonRemove
 import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -57,6 +64,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -80,6 +88,10 @@ import ir.shadbib.app.data.GroupMessage
 import ir.shadbib.app.data.StudyGroup
 import ir.shadbib.app.ui.components.Avatar
 import ir.shadbib.app.ui.components.EmptyState
+import GlassAction
+import GlassDivider
+import GlassMenu
+import GlassReactions
 import ir.shadbib.app.ui.components.LoadingBox
 import ir.shadbib.app.ui.components.ProgressRow
 import ir.shadbib.app.ui.components.userColor
@@ -397,15 +409,15 @@ fun GroupChatScreen(id: Int, name: String, onBack: () -> Unit, vm: GroupsViewMod
 
     actionMsg?.let { m ->
         val clip = androidx.compose.ui.platform.LocalClipboardManager.current
-        ir.shadbib.app.ui.components.GlassMenu(onDismiss = { actionMsg = null }) {
-            ir.shadbib.app.ui.components.GlassReactions(mineEmoji = m.reactions.firstOrNull { it.mine }?.emoji) { em -> vm.react(id, m.id, em) }
-            ir.shadbib.app.ui.components.GlassDivider()
-            ir.shadbib.app.ui.components.GlassAction(Icons.Rounded.Reply, "پاسخ") { replyTo = m }
-            if (m.sender != me) ir.shadbib.app.ui.components.GlassAction(Icons.Rounded.Person, "پروفایل ${m.sender}") { profileUser = m.sender }
-            if (m.message.isNotBlank()) ir.shadbib.app.ui.components.GlassAction(Icons.Rounded.ContentCopy, "کپی متن") {
+        GlassMenu(onDismiss = { actionMsg = null }) {
+            GlassReactions(mineEmoji = m.reactions.firstOrNull { it.mine }?.emoji) { em -> vm.react(id, m.id, em) }
+            GlassDivider()
+            GlassAction(Icons.Rounded.Reply, "پاسخ") { replyTo = m }
+            if (m.sender != me) GlassAction(Icons.Rounded.Person, "پروفایل ${m.sender}") { profileUser = m.sender }
+            if (m.message.isNotBlank()) GlassAction(Icons.Rounded.ContentCopy, "کپی متن") {
                 clip.setText(androidx.compose.ui.text.AnnotatedString(m.message))
             }
-            if (m.sender == me) ir.shadbib.app.ui.components.GlassAction(Icons.Rounded.Delete, "حذف پیام", danger = true) { vm.deleteMsg(id, m.id) }
+            if (m.sender == me) GlassAction(Icons.Rounded.Delete, "حذف پیام", danger = true) { vm.deleteMsg(id, m.id) }
         }
     }
     if (viewImage != null) {

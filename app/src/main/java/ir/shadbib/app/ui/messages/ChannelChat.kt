@@ -39,6 +39,8 @@ import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Chat
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -76,6 +78,10 @@ import ir.shadbib.app.data.FriendDetail
 import ir.shadbib.app.core.fa
 import ir.shadbib.app.ui.components.Avatar
 import ir.shadbib.app.ui.components.EmptyState
+import GlassAction
+import GlassDivider
+import GlassMenu
+import GlassReactions
 import ir.shadbib.app.ui.components.LoadingBox
 import ir.shadbib.app.ui.components.ProgressRow
 import ir.shadbib.app.ui.components.StatPill
@@ -264,15 +270,15 @@ fun ChannelChatScreen(channel: String, title: String, emoji: String, onBack: () 
 
     actionMsg?.let { m ->
         val clip = androidx.compose.ui.platform.LocalClipboardManager.current
-        ir.shadbib.app.ui.components.GlassMenu(onDismiss = { actionMsg = null }) {
-            ir.shadbib.app.ui.components.GlassReactions(mineEmoji = m.reactions.firstOrNull { it.mine }?.emoji) { em -> vm.react(m.id, em) }
-            ir.shadbib.app.ui.components.GlassDivider()
-            if (canPost) ir.shadbib.app.ui.components.GlassAction(Icons.AutoMirrored.Rounded.Send, "پاسخ") { replyTo = m }
-            if (m.sender != me) ir.shadbib.app.ui.components.GlassAction(Icons.AutoMirrored.Rounded.Chat, "پروفایل ${m.sender}") { profileUser = m.sender }
-            if (m.message.isNotBlank()) ir.shadbib.app.ui.components.GlassAction(Icons.Rounded.ContentCopy, "کپی متن") {
+        GlassMenu(onDismiss = { actionMsg = null }) {
+            GlassReactions(mineEmoji = m.reactions.firstOrNull { it.mine }?.emoji) { em -> vm.react(m.id, em) }
+            GlassDivider()
+            if (canPost) GlassAction(Icons.AutoMirrored.Rounded.Send, "پاسخ") { replyTo = m }
+            if (m.sender != me) GlassAction(Icons.AutoMirrored.Rounded.Chat, "پروفایل ${m.sender}") { profileUser = m.sender }
+            if (m.message.isNotBlank()) GlassAction(Icons.Rounded.ContentCopy, "کپی متن") {
                 clip.setText(androidx.compose.ui.text.AnnotatedString(m.message))
             }
-            if (m.sender == me) ir.shadbib.app.ui.components.GlassAction(Icons.Rounded.Close, "حذف پیام", danger = true) { vm.delete(m.id) }
+            if (m.sender == me) GlassAction(Icons.Rounded.Close, "حذف پیام", danger = true) { vm.delete(m.id) }
         }
     }
     if (viewImage != null) {
@@ -307,7 +313,7 @@ private fun ChannelBubble(m: ChatMessage, isMine: Boolean, onLongPress: () -> Un
                 }
             }
             Box(Modifier.combinedClickable(onClick = onLongPress, onLongClick = onLongPress)) {
-                if (m.type == "text") Text(m.message, style = MaterialTheme.typography.bodyMedium)
+                if (m.type == "text") Text(m.message ?: "", style = MaterialTheme.typography.bodyMedium)
                 else MediaBody(m.type, m.mediaPath, m.fileName, m.fileSize, m.duration, m.message, onImageClick, onLongPress = onLongPress)
             }
             if (m.reactions.isNotEmpty()) {

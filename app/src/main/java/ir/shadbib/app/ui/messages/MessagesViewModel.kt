@@ -20,7 +20,21 @@ class MessagesViewModel : ViewModel() {
         val groups: List<StudyGroup> = emptyList(),
     )
 
+    data class GroupMeta(
+        val sender: String?,
+        val last: String?,
+        val time: String?,
+        val unread: Int,
+        val mention: Boolean,
+    )
+
     val state = MutableStateFlow(State())
+
+    /** خلاصه کانال‌ها: نام → (آخرین پیام، فرستنده، ناخوانده) */
+    val channelMeta = MutableStateFlow<Map<String, Triple<String?, String?, Int>>>(emptyMap())
+
+    /** خلاصه گروه‌ها: id → متا */
+    val groupMeta = MutableStateFlow<Map<Int, GroupMeta>>(emptyMap())
 
     fun poll() {
         viewModelScope.launch {

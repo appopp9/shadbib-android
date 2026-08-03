@@ -78,10 +78,11 @@ import ir.shadbib.app.data.FriendDetail
 import ir.shadbib.app.core.fa
 import ir.shadbib.app.ui.components.Avatar
 import ir.shadbib.app.ui.components.EmptyState
-import GlassAction
-import GlassDivider
-import GlassMenu
-import GlassReactions
+import ir.shadbib.app.ui.components.ColumnScopeGlass
+import ir.shadbib.app.ui.components.GlassAction
+import ir.shadbib.app.ui.components.GlassDivider
+import ir.shadbib.app.ui.components.GlassMenu
+import ir.shadbib.app.ui.components.GlassReactions
 import ir.shadbib.app.ui.components.LoadingBox
 import ir.shadbib.app.ui.components.ProgressRow
 import ir.shadbib.app.ui.components.StatPill

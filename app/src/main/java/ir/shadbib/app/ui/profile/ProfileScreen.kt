@@ -88,10 +88,11 @@ import ir.shadbib.app.data.ProfileData
 import ir.shadbib.app.player.PlayerHolder
 import ir.shadbib.app.ui.components.AppCard
 import ir.shadbib.app.ui.components.Avatar
-import GlassAction
-import GlassDivider
-import GlassMenu
-import GlassReactions
+import ir.shadbib.app.ui.components.ColumnScopeGlass
+import ir.shadbib.app.ui.components.GlassAction
+import ir.shadbib.app.ui.components.GlassDivider
+import ir.shadbib.app.ui.components.GlassMenu
+import ir.shadbib.app.ui.components.GlassReactions
 import ir.shadbib.app.ui.components.EmptyState
 import ir.shadbib.app.ui.components.ErrorState
 import ir.shadbib.app.ui.components.LoadingBox

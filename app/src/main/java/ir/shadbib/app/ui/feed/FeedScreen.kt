@@ -52,9 +52,10 @@ import androidx.compose.material.icons.rounded.FormatQuote
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.LibraryMusic
-import GlassMenu
-import GlassAction
-import GlassDivider
+import ir.shadbib.app.ui.components.GlassMenu
+import ir.shadbib.app.ui.components.ColumnScopeGlass
+import ir.shadbib.app.ui.components.GlassAction
+import ir.shadbib.app.ui.components.GlassDivider
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Add

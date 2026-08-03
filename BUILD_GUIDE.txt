@@ -1,0 +1,63 @@
+شادبیب اندروید v2.3.0 — راهنمای بیلد
+=====================================
+این سورس کامل و آمادهٔ بیلد است (کی‌استور امضا هم داخلش هست).
+
+روش ۱ — Android Studio (پیشنهادی):
+  1. پوشه را در Android Studio باز کن (Open Project)
+  2. صبر کن Gradle Sync تمام شود
+     (بار اول گریدل 8.7 دانلود می‌شود — اینترنت لازم است)
+  3. Build → Build Bundle(s)/APK(s) → Build APK(s)
+  4. خروجی: app/build/outputs/apk/release/app-release.apk
+
+روش ۲ — خط فرمان:
+  این بسته فایل gradlew و gradle-wrapper.jar ندارد (باینری است).
+  یک‌بار در ریشهٔ پروژه اجرا کن تا ساخته شوند:
+      gradle wrapper --gradle-version 8.7
+  بعد از آن:
+      ./gradlew assembleRelease        (ویندوز: gradlew.bat assembleRelease)
+  اگر پروژه را یک‌بار در Android Studio باز کنی، خودش رپر را می‌سازد.
+
+پیش‌نیازها:
+  - JDK 17 (اجباری — jvmTarget 17)
+  - Android SDK Platform 34
+  - Android Studio Koala یا بالاتر (AGP 8.5.2)
+
+local.properties:
+  عمداً داخل بسته نیست چون مسیر SDK روی سیستم تو فرق دارد.
+  Android Studio خودکار می‌سازدش. برای خط فرمان دستی بساز:
+      sdk.dir=/path/to/Android/Sdk
+
+امضا:
+  خودکار با keystore/shadbib.keystore (تنظیمات داخل app/build.gradle).
+  هر دو بیلد‌تایپ debug و release با همین کلید امضا می‌شوند، پس
+  می‌توانی روی نسخهٔ نصب‌شدهٔ قبلی مستقیم آپدیت کنی.
+
+نسخه: versionCode 16 — versionName 2.3.0
+
+────────────────────────────────────────────────────────────
+جدید در این نسخه — اتاق مطالعه
+────────────────────────────────────────────────────────────
+
+فایل‌های جدید:
+  app/src/main/java/ir/shadbib/app/ui/study/room/RoomChars.kt
+  app/src/main/java/ir/shadbib/app/ui/study/room/RoomModels.kt
+  app/src/main/java/ir/shadbib/app/ui/study/room/StudyRoomViewModel.kt
+  app/src/main/java/ir/shadbib/app/ui/study/room/StudyRoomScreen.kt
+  app/src/main/res/drawable-nodpi/  (30 فایل webp — 668 KB)
+
+فایل‌های تغییریافته:
+  app/src/main/java/ir/shadbib/app/ui/nav/MainScaffold.kt   (۴ خط)
+  app/build.gradle                                          (فقط نسخه)
+
+هیچ دپندنسی جدیدی اضافه نشده.
+StudySpaceScreen.kt قدیمی دست نخورده و مثل قبل کار می‌کند.
+
+⚠ اتاق مطالعه بدون بک‌اند جدید کار نمی‌کند.
+  بستهٔ shadbib_backend_room.zip را ببین — یک فایل SQL باید اجرا شود
+  و api.php روی هاست جایگزین شود. تا اون موقع تب «اتاق» باز می‌شود
+  ولی خطای شبکه می‌دهد و کسی را نشان نمی‌دهد.
+
+آدرس سرور در core/Api.kt تعریف شده و دست نخورده:
+  BASE = "https://beautifulrabor.ir/shadbib/api.php"
+
+لیست کامل تغییرات نسخه‌های قبل: CHANGELOG.md

@@ -194,7 +194,7 @@ private fun InboxScreen(vm: MessagesViewModel, onOpenDm: (String) -> Unit, onOpe
                         // ادغام تلگرامی: پیوی‌ها و گروه‌ها با هم، مرتب بر اساس آخرین پیام (پین‌ها اول)
                         val entries: List<InboxEntry> =
                             state.conversations.map { c -> InboxEntry.Dm(c, c.lastTime) } +
-                            state.groups.map { g -> InboxEntry.Grp(g, gMeta[g.id]?.time) }
+                            state.groups.map { g -> InboxEntry.Grp(g, groupMeta[g.id]?.time) }
                         val sorted = entries.sortedWith(
                             compareByDescending<InboxEntry> { e ->
                                 val key = when (e) { is InboxEntry.Dm -> "dm:" + e.c.username; is InboxEntry.Grp -> "grp:" + e.g.id }
@@ -208,7 +208,7 @@ private fun InboxScreen(vm: MessagesViewModel, onOpenDm: (String) -> Unit, onOpe
                                         onClick = { onOpenDm(e.c.username) },
                                         onLongClick = { chatMenu = e.c.username })
                                     is InboxEntry.Grp -> {
-                                        val gm = gMeta[e.g.id]
+                                        val gm = groupMeta[e.g.id]
                                         GroupInboxRow(e.g.name, gm?.sender, gm?.last, gm?.time, gm?.unread ?: 0, gm?.mention == true,
                                             pinned = prefs.pinned.contains("grp:" + e.g.id),
                                             onClick = { onOpenGroup(e.g.id, e.g.name) },

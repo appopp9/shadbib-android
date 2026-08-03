@@ -323,7 +323,7 @@ private fun ChannelBubble(m: ChatMessage, isMine: Boolean, onLongPress: () -> Un
                         Surface(shape = CircleShape,
                             color = if (r.mine) MaterialTheme.colorScheme.primary.copy(alpha = 0.28f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
                             border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = if (r.mine) 0.3f else 0.12f))) {
-                            Text("${'$'}{r.emoji} ${'$'}{if (r.count > 1) r.count.fa() else ""}".trim(),
+                            Text((r.emoji + if (r.count > 1) " " + r.count.fa() else "").trim(),
                                 style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp))
                         }
                     }

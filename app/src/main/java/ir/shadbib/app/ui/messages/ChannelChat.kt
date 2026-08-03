@@ -313,7 +313,7 @@ private fun ChannelBubble(m: ChatMessage, isMine: Boolean, onLongPress: () -> Un
                 }
             }
             Box(Modifier.combinedClickable(onClick = onLongPress, onLongClick = onLongPress)) {
-                if (m.type == "text") Text(m.message ?: "", style = MaterialTheme.typography.bodyMedium)
+                if (m.type == "text") Text(m.message, style = MaterialTheme.typography.bodyMedium)
                 else MediaBody(m.type, m.mediaPath, m.fileName, m.fileSize, m.duration, m.message, onImageClick, onLongPress = onLongPress)
             }
             if (m.reactions.isNotEmpty()) {

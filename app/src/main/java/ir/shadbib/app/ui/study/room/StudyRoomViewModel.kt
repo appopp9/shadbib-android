@@ -20,8 +20,11 @@ import org.json.JSONObject
  * مغز اتاق مطالعه.
  *
  * روی هاست اشتراکی PHP وب‌ساکت نداریم؛ پس حضور با «ضربان» هر [BEAT_SEC] ثانیه
- * نگه داشته می‌شود. همان یک درخواست هم وضعیت ما را می‌فرستد و هم لیست بقیه را
- * برمی‌گرداند — یعنی یک رفت‌وبرگشت در هر چرخه، نه دو تا.
+ * نگه داشته می‌شود. همان یک درخواست هم وضعیت ما را می‌فرستد، هم لیست بقیه را
+ * برمی‌گرداند و هم تشویق‌های رسیده را تحویل می‌دهد — یعنی یک رفت‌وبرگشت در هر چرخه.
+ *
+ * آمار قاب‌های دیواری سنگین‌تر است، پس فقط موقع ورود و بعد هر [FULL_EVERY]
+ * ضربان درخواست می‌شود؛ ضربان معمولی سبک می‌ماند.
  *
  * حضور فقط تا وقتی ادامه دارد که کاربر روی این صفحه و اپ جلوی چشمش باشد؛
  * صفحه که عوض شود یا اپ برود پس‌زمینه، [leave] صدا می‌شود.
@@ -31,10 +34,18 @@ class StudyRoomViewModel : ViewModel() {
     companion object {
         const val BEAT_SEC = 25L
         const val PUBLIC_ROOM = 1
+
+        /** هر چند ضربان یک‌بار آمار کامل بگیریم (۴ × ۲۵ ثانیه ≈ ۱۰۰ ثانیه). */
+        const val FULL_EVERY = 4
+
+        val CHEER_EMOJIS = listOf("👏", "☕", "💪", "❤️", "⭐")
     }
 
     private val _snapshot = MutableStateFlow(RoomSnapshot())
     val snapshot: StateFlow<RoomSnapshot> get() = _snapshot
+
+    private val _stats = MutableStateFlow(RoomStats())
+    val stats: StateFlow<RoomStats> get() = _stats
 
     private val _character = MutableStateFlow("cat")
     val character: StateFlow<String> get() = _character
@@ -54,6 +65,7 @@ class StudyRoomViewModel : ViewModel() {
 
     private var beatJob: Job? = null
     private var watchJob: Job? = null
+    private var beatCount = 0
 
     private fun computeMyState(): String {
         val p = Pomodoro.state.value
@@ -68,9 +80,12 @@ class StudyRoomViewModel : ViewModel() {
         _myState.value = computeMyState()
 
         if (beatJob?.isActive != true) {
+            beatCount = 0
             beatJob = viewModelScope.launch {
                 while (isActive) {
-                    beat()
+                    // ضربان اول و بعد هر چهار تا، آمار کامل هم می‌آید
+                    beat(full = beatCount % FULL_EVERY == 0)
+                    beatCount++
                     delay(BEAT_SEC * 1000)
                 }
             }
@@ -84,7 +99,7 @@ class StudyRoomViewModel : ViewModel() {
                     val s = computeMyState()
                     if (s != _myState.value) {
                         _myState.value = s
-                        beat()
+                        beat(full = false)
                     }
                     delay(1000)
                 }
@@ -105,20 +120,36 @@ class StudyRoomViewModel : ViewModel() {
     /** ضربان دستی — بعد از استارت/استاپ تایمر تا وضعیت فوری در اتاق عوض شود. */
     fun pulse() {
         _myState.value = computeMyState()
-        viewModelScope.launch { beat() }
+        viewModelScope.launch { beat(full = false) }
     }
 
-    private suspend fun beat() {
+    /** تشویق یک نفر دیگر. خطایش عمداً بی‌صداست — چیز حیاتی‌ای نیست. */
+    fun cheer(toUserId: Int, emoji: String) {
+        viewModelScope.launch {
+            runCatching {
+                Api.post(
+                    "room_cheer",
+                    JSONObject().put("to_user", toUserId).put("emoji", emoji),
+                )
+            }
+        }
+    }
+
+    private suspend fun beat(full: Boolean) {
         val body = JSONObject()
             .put("room_id", PUBLIC_ROOM)
             .put("state", _myState.value)
             .put("character", _character.value)
+        if (full) body.put("full", 1)
+
         runCatching { Api.obj(Api.post("room_beat", body)) }
             .onSuccess { o ->
                 _error.value = null
                 val mine = o.str("character")
                 if (mine.isNotBlank()) _character.value = mine
                 _snapshot.value = RoomSnapshot.from(o)
+                // ضربان سبک آمار ندارد؛ آمار قبلی را دور نمی‌ریزیم
+                RoomStats.from(o)?.let { _stats.value = it }
             }
             .onFailure { _error.value = humanizeError(it) }
     }
@@ -127,7 +158,7 @@ class StudyRoomViewModel : ViewModel() {
         _character.value = key
         viewModelScope.launch {
             runCatching { Api.post("character_set", JSONObject().put("character", key)) }
-            beat()
+            beat(full = false)
         }
     }
 
@@ -143,7 +174,8 @@ class StudyRoomViewModel : ViewModel() {
             runCatching { Api.post("study", body) }
                 .onSuccess {
                     RefreshBus.emit("study")
-                    beat()
+                    // بعد از ثبت، آمار قاب‌ها دیگر کهنه است — فوراً کامل بگیر
+                    beat(full = true)
                     onResult(null)
                 }
                 .onFailure { onResult(humanizeError(it)) }

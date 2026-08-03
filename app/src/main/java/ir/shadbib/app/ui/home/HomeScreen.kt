@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -78,6 +77,7 @@ import ir.shadbib.app.ui.components.ProgressRow
 import ir.shadbib.app.ui.components.SectionTitle
 import ir.shadbib.app.ui.theme.brandGradient
 import ir.shadbib.app.ui.theme.courseColor
+import androidx.compose.foundation.layout.fillMaxSize
 
 private val GENERAL_MOODS = listOf(
     "📚" to "مطالعه", "📖" to "کتابخوانی", "✏️" to "یادداشت", "🧮" to "ریاضی",

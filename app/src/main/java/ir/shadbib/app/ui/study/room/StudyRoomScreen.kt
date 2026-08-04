@@ -616,7 +616,7 @@ fun StudyRoomScreen(vm: StudyRoomViewModel = viewModel()) {
                     val m = pendingMinutes
                     overlay = ""
                     vm.logMinutes(m, cid) { e ->
-                        toast = e ?: (m.fa() + " دقیقه ثبت شد ✅)
+                        toast = e ?: (m.fa() + " دقیقه ثبت شد ✅")
                         if (e == null) {
                             Pomodoro.reset()
                             Chrono.reset()

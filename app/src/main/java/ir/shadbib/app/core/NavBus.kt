@@ -11,6 +11,9 @@ object NavBus {
     private val _openStudy = MutableStateFlow(false)
     val openStudy: StateFlow<Boolean> get() = _openStudy
 
+    private val _openUser = MutableStateFlow<String?>(null)
+    val openUser: StateFlow<String?> get() = _openUser
+
     private val _openChannel = MutableStateFlow<Triple<String, String, String>?>(null)
     val openChannel: StateFlow<Triple<String, String, String>?> get() = _openChannel
 
@@ -19,6 +22,9 @@ object NavBus {
 
     fun requestStudy() { _openStudy.value = true }
     fun consumeStudy() { _openStudy.value = false }
+
+    fun requestUser(username: String) { _openUser.value = username }
+    fun consumeUser() { _openUser.value = null }
 
     fun requestChannel(key: String, title: String, emoji: String) { _openChannel.value = Triple(key, title, emoji) }
     fun consumeChannel() { _openChannel.value = null }

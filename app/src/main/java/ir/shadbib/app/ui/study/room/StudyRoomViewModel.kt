@@ -171,6 +171,7 @@ class StudyRoomViewModel : ViewModel() {
         viewModelScope.launch {
             val body = JSONObject().put("minutes", minutes)
             if (courseId != null) body.put("course_id", courseId)
+            body.put("share_post", if (ir.shadbib.app.core.Store.prefs.value.autoStudyPost) 1 else 0)
             runCatching { Api.post("study", body) }
                 .onSuccess {
                     RefreshBus.emit("study")

@@ -1,6 +1,9 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 
 package ir.shadbib.app.ui.community
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.runtime.mutableIntStateOf
 
 import android.content.Context
 import android.net.Uri
@@ -106,8 +109,6 @@ import ir.shadbib.app.ui.components.GlassReactions
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Download
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.runtime.mutableIntStateOf
 
 class GroupsViewModel : ViewModel() {
     val groups = MutableStateFlow<List<StudyGroup>>(emptyList())

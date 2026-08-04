@@ -61,11 +61,6 @@ import kotlinx.coroutines.delay
 import ir.shadbib.app.ui.components.GlassMenu
 import ir.shadbib.app.ui.components.GlassAction
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material3.IconButton
-import ir.shadbib.app.ui.components.ColumnScopeGlass
-import ir.shadbib.app.ui.components.GlassDivider
-import ir.shadbib.app.ui.components.GlassReactions
 
 private sealed class MsgRoute {
     object Inbox : MsgRoute()
@@ -149,7 +144,6 @@ private fun InboxScreen(vm: MessagesViewModel, onOpenDm: (String) -> Unit, onOpe
     val state by vm.state.collectAsState()
     val prefs by ir.shadbib.app.core.Store.prefs.collectAsState()
     val gMeta by vm.groupMeta.collectAsState()
-    val channelMeta by vm.channelMeta.collectAsState()
     var chatMenu by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { while (true) { vm.poll(); delay(7000) } }
     LaunchedEffect(Unit) { ir.shadbib.app.core.RefreshBus.events.collect { if (it == "dm" || it == "groups" || it == "all") vm.poll() } }
@@ -176,14 +170,15 @@ private fun InboxScreen(vm: MessagesViewModel, onOpenDm: (String) -> Unit, onOpe
         } else {
             LazyColumn(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 item {
+                    val meta by vm.channelMeta.collectAsState()
                     fun sub(ch: String, def: String): String {
-                        val m = channelMeta[ch] ?: return def
+                        val m = meta[ch] ?: return def
                         return if (m.first != null) "${m.second}: ${m.first}" else def
                     }
                     Column {
-                        PinnedRow("💬", "چت همگانی", sub("public", "گفت‌وگوی عمومی همه کاربران"), Color(0xFF34D399), unread = channelMeta["public"]?.third ?: 0) { onOpenChannel("public", "چت همگانی", "💬") }
-                        PinnedRow("❓", "رفع اشکال", sub("help", "سوال بپرس و به بقیه کمک کن"), Color(0xFF38BDF8), unread = channelMeta["help"]?.third ?: 0) { onOpenChannel("help", "رفع اشکال", "❓") }
-                        PinnedRow("📢", "اطلاع‌رسانی", sub("news", "اخبار و اطلاعیه‌های رسمی"), Color(0xFFF59E0B), unread = channelMeta["news"]?.third ?: 0) { onOpenChannel("news", "اطلاع‌رسانی", "📢") }
+                        PinnedRow("💬", "چت همگانی", sub("public", "گفت‌وگوی عمومی همه کاربران"), Color(0xFF34D399), unread = meta["public"]?.third ?: 0) { onOpenChannel("public", "چت همگانی", "💬") }
+                        PinnedRow("❓", "رفع اشکال", sub("help", "سوال بپرس و به بقیه کمک کن"), Color(0xFF38BDF8), unread = meta["help"]?.third ?: 0) { onOpenChannel("help", "رفع اشکال", "❓") }
+                        PinnedRow("📢", "اطلاع‌رسانی", sub("news", "اخبار و اطلاعیه‌های رسمی"), Color(0xFFF59E0B), unread = meta["news"]?.third ?: 0) { onOpenChannel("news", "اطلاع‌رسانی", "📢") }
                     }
                 }
                 item { Spacer(Modifier.size(4.dp)); Text("گفتگوها", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 4.dp)) }

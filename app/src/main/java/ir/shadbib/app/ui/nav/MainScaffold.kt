@@ -123,6 +123,16 @@ fun MainScaffold() {
         }
     }
 
+    val openUserReq by NavBus.openUser.collectAsState()
+    LaunchedEffect(openUserReq) {
+        if (openUserReq != null && currentRoute != "community") {
+            nav.navigate("community") {
+                popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true; restoreState = true
+            }
+        }
+    }
+
     val openStudy by NavBus.openStudy.collectAsState()
 
     Scaffold(

@@ -81,6 +81,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.shadbib.app.R
+import ir.shadbib.app.core.NavBus
 import ir.shadbib.app.core.fa
 import ir.shadbib.app.player.AmbientMixer
 import ir.shadbib.app.player.Chrono
@@ -142,11 +143,13 @@ fun StudyRoomScreen(vm: StudyRoomViewModel = viewModel()) {
 
     val goal by RoomPrefs.goal.collectAsState()
     val owned by RoomPrefs.owned.collectAsState()
+    val activeItems by RoomPrefs.active.collectAsState()
     val spent by RoomPrefs.spent.collectAsState()
     val coins = (stats.totalMinutes - spent).coerceAtLeast(0)
 
     // "" | "char" | "sound" | "shop" | "cheer"
     var overlay by remember { mutableStateOf("") }
+    var pendingMinutes by remember { mutableStateOf(0) }
     var cheerTarget by remember { mutableStateOf<RoomOccupant?>(null) }
     var toast by remember { mutableStateOf<String?>(null) }
 
@@ -324,7 +327,7 @@ fun StudyRoomScreen(vm: StudyRoomViewModel = viewModel()) {
         val smY = frameY - smH - clockR * 0.5f
         val centers = listOf(w.value * 0.20f, w.value * 0.50f, w.value * 0.80f)
 
-        WallFrame(centers[0] - smW / 2f, smY, smW, smH, fill = Sand) {
+        WallFrame(centers[0] - smW / 2f, smY, smW, smH, fill = Sand, onClick = { overlay = "top" }) {
             TopBoardBody(stats.top)
         }
         WallFrame(centers[1] - smW / 2f, smY, smW, smH, fill = Cream) {
@@ -405,7 +408,7 @@ fun StudyRoomScreen(vm: StudyRoomViewModel = viewModel()) {
 
         // ---------------- لایه ۷: میز جلو و وسایل روی میز ----------------
         Desk(-0.03f, 1.03f, FRONT_DESK_TOP, 1.10f - FRONT_DESK_TOP, w, h, radius = 14.dp, stroke = 4.dp)
-        DeskItems(owned)
+        DeskItems(owned, activeItems)
 
         // ---------------- لایه ۸: تشویق‌های شناور و کانفتی ----------------
         floaters.forEach { f ->
@@ -442,7 +445,14 @@ fun StudyRoomScreen(vm: StudyRoomViewModel = viewModel()) {
                         onClick = { RoomPrefs.cycleGoal() },
                     )
                     Spacer(Modifier.width(6.dp))
-                    NbChip(text = snap.online.fa() + " 👥", fill = Mint)
+                    Box(
+                        Modifier.clickable(
+                            remember { MutableInteractionSource() },
+                            indication = null,
+                        ) { overlay = "roster" }
+                    ) {
+                        NbChip(text = snap.online.fa() + " 👥", fill = Mint)
+                    }
                     Spacer(Modifier.width(6.dp))
                     NbIconButton(
                         icon = if (night) Icons.Rounded.Bedtime else Icons.Rounded.WbSunny,
@@ -464,13 +474,11 @@ fun StudyRoomScreen(vm: StudyRoomViewModel = viewModel()) {
                     Spacer(Modifier.width(5.dp))
                     NbIconButton(icon = Icons.Rounded.Check, fill = Mint, box = 34.dp) {
                         val minutes = pomo.completedWork * pomo.config.workMin + chronoSec / 60
-                        vm.logMinutes(minutes, null) { e ->
-                            toast = e ?: (minutes.fa() + " دقیقه ثبت شد ✅")
-                            if (e == null) {
-                                Pomodoro.reset()
-                                Chrono.reset()
-                                chronoRunning = false
-                            }
+                        if (minutes < 1) {
+                            toast = "زمانی برای ثبت نیست"
+                        } else {
+                            pendingMinutes = minutes
+                            overlay = "course"
                         }
                     }
                 }
@@ -491,7 +499,9 @@ fun StudyRoomScreen(vm: StudyRoomViewModel = viewModel()) {
         }
 
         // ---------------- لایه ۱۰: پنجره‌ها ----------------
-        if (overlay.isNotEmpty()) {
+        val sheetOverlay = overlay == "shop" || overlay == "roster" ||
+            overlay == "top" || overlay == "course"
+        if (overlay.isNotEmpty() && !sheetOverlay) {
             Box(
                 Modifier
                     .fillMaxSize()
@@ -584,56 +594,38 @@ fun StudyRoomScreen(vm: StudyRoomViewModel = viewModel()) {
                 }
             }
 
-            "shop" -> NbCard(
-                fill = Cream,
-                modifier = Modifier.align(Alignment.Center).fillMaxWidth(0.92f),
-            ) {
-                Column(Modifier.padding(14.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("وسایل میز", fontWeight = FontWeight.Black, color = Ink, fontSize = 18.sp)
-                        Spacer(Modifier.width(10.dp))
-                        NbChip(text = coins.fa() + " 🪙", fill = Sand)
-                    }
-                    Text(
-                        "هر دقیقه مطالعه = یک سکه",
-                        color = Ink,
-                        fontSize = 11.sp,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    RoomPrefs.catalogue.forEach { item ->
-                        val has = owned.contains(item.key)
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                item.fa,
-                                color = Ink,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.weight(1f),
-                            )
-                            if (has) {
-                                NbChip(text = "داری ✅", fill = Mint)
-                            } else {
-                                NbTextButton(
-                                    text = item.cost.fa() + " 🪙",
-                                    fill = if (coins >= item.cost) Sand else Color(0xFFE5E5E5),
-                                ) {
-                                    if (RoomPrefs.buy(item, stats.totalMinutes)) {
-                                        toast = item.fa + " اضافه شد!"
-                                    } else {
-                                        toast = "سکه کافی نداری"
-                                    }
-                                }
-                            }
+            "shop" -> ShopSheet(
+                totalMinutes = stats.totalMinutes,
+                onDismiss = { overlay = "" },
+                onToast = { t -> toast = t },
+            )
+
+            "roster" -> OccupantSheet(
+                onUser = { u -> overlay = ""; NavBus.requestUser(u) },
+                onDismiss = { overlay = "" },
+            )
+
+            "top" -> LeaderboardSheet(
+                onUser = { u -> overlay = ""; NavBus.requestUser(u) },
+                onDismiss = { overlay = "" },
+            )
+
+            "course" -> CoursePickerSheet(
+                minutes = pendingMinutes,
+                onPick = { cid ->
+                    val m = pendingMinutes
+                    overlay = ""
+                    vm.logMinutes(m, cid) { e ->
+                        toast = e ?: (m.fa() + " دقیقه ثبت شد ✅)
+                        if (e == null) {
+                            Pomodoro.reset()
+                            Chrono.reset()
+                            chronoRunning = false
                         }
                     }
-                }
-            }
+                },
+                onDismiss = { overlay = "" },
+            )
 
             "cheer" -> {
                 val target = cheerTarget
@@ -968,15 +960,130 @@ private fun Confetti() {
 
 /** وسایل روی میز جلو — با سکهٔ مطالعه باز می‌شوند. */
 @Composable
-private fun DeskItems(owned: Set<String>) {
+private fun DeskItems(owned: Set<String>, active: Map<String, String>) {
     if (owned.isEmpty()) return
+    val lamp = RoomPrefs.activeOf("lamp")
+    val mug = RoomPrefs.activeOf("mug")
+    val plant = RoomPrefs.activeOf("plant")
+    val clock = RoomPrefs.activeOf("clock")
     Canvas(Modifier.fillMaxSize()) {
         val deskY = size.height * FRONT_DESK_TOP + size.height * 0.004f
         val u = size.width * 0.052f
         val sw = size.width * 0.006f
-        if (owned.contains("lamp")) drawLamp(size.width * 0.13f, deskY, u, sw)
-        if (owned.contains("coffee")) drawCoffee(size.width * 0.30f, deskY, u, sw)
-        if (owned.contains("plant")) drawPlant(size.width * 0.87f, deskY, u, sw)
+        when (lamp) {
+            "lamp" -> drawLamp(size.width * 0.13f, deskY, u, sw, Coral)
+            "lamp_neon" -> drawLamp(size.width * 0.13f, deskY, u, sw, Mint)
+        }
+        when (mug) {
+            "mug_coffee" -> drawMug(size.width * 0.30f, deskY, u, sw, Color.White, Color(0xFF7B4A2B), false)
+            "mug_tea" -> drawMug(size.width * 0.30f, deskY, u, sw, Cream, Color(0xFFC97B26), true)
+            "mug_matcha" -> drawMug(size.width * 0.30f, deskY, u, sw, Color.White, Color(0xFF6DBE45), false)
+            "mug_cocoa" -> drawMug(size.width * 0.30f, deskY, u, sw, Coral, Color(0xFF4A2C1A), true)
+        }
+        if (clock != null) drawDeskClock(size.width * 0.70f, deskY, u, sw, clock)
+        if (plant != null) drawPlantVariant(size.width * 0.87f, deskY, u, sw, plant)
+    }
+}
+
+/** ماگ یا استکان — بدنه، مایع و دسته. */
+private fun DrawScope.drawMug(
+    cx: Float,
+    baseY: Float,
+    u: Float,
+    sw: Float,
+    body: Color,
+    liquid: Color,
+    tall: Boolean,
+) {
+    val h = if (tall) u * 1.15f else u * 0.85f
+    val wBody = if (tall) u * 0.70f else u * 0.86f
+    nbRect(cx - wBody / 2f, baseY - h, wBody, h, body, u * 0.14f, sw)
+    nbRect(cx - wBody / 2f + sw, baseY - h + sw * 1.4f, wBody - sw * 2f, u * 0.20f, liquid, u * 0.08f, sw * 0.7f)
+    drawArc(
+        color = Ink,
+        startAngle = -70f,
+        sweepAngle = 140f,
+        useCenter = false,
+        topLeft = Offset(cx + wBody / 2f - u * 0.16f, baseY - h * 0.78f),
+        size = Size(u * 0.42f, u * 0.46f),
+        style = Stroke(width = sw),
+    )
+}
+
+/** گلدان‌های مختلف. */
+private fun DrawScope.drawPlantVariant(cx: Float, baseY: Float, u: Float, sw: Float, kind: String) {
+    val potW = u * 0.95f
+    val potH = u * 0.62f
+    nbRect(cx - potW / 2f, baseY - potH, potW, potH, Coral, u * 0.10f, sw)
+    val top = baseY - potH
+    when (kind) {
+        "plant_cactus" -> {
+            nbRect(cx - u * 0.20f, top - u * 1.25f, u * 0.40f, u * 1.30f, Mint, u * 0.18f, sw)
+            nbRect(cx + u * 0.16f, top - u * 0.95f, u * 0.34f, u * 0.22f, Mint, u * 0.10f, sw)
+            nbRect(cx - u * 0.50f, top - u * 0.72f, u * 0.34f, u * 0.20f, Mint, u * 0.10f, sw)
+        }
+        "plant_monstera" -> {
+            nbCircle(cx - u * 0.34f, top - u * 0.86f, u * 0.40f, Mint, sw)
+            nbCircle(cx + u * 0.34f, top - u * 0.92f, u * 0.40f, Mint, sw)
+            nbCircle(cx, top - u * 1.34f, u * 0.44f, Mint, sw)
+        }
+        "plant_bonsai" -> {
+            nbRect(cx - u * 0.08f, top - u * 0.80f, u * 0.16f, u * 0.85f, Color(0xFF7B4A2B), u * 0.05f, sw)
+            nbCircle(cx - u * 0.30f, top - u * 1.00f, u * 0.34f, Mint, sw)
+            nbCircle(cx + u * 0.32f, top - u * 1.12f, u * 0.36f, Mint, sw)
+            nbCircle(cx, top - u * 1.40f, u * 0.32f, Mint, sw)
+        }
+        else -> {
+            nbCircle(cx - u * 0.26f, top - u * 0.62f, u * 0.34f, Mint, sw)
+            nbCircle(cx + u * 0.26f, top - u * 0.62f, u * 0.34f, Mint, sw)
+            nbCircle(cx, top - u * 1.02f, u * 0.36f, Mint, sw)
+        }
+    }
+}
+
+/** ساعت‌های رومیزی. */
+private fun DrawScope.drawDeskClock(cx: Float, baseY: Float, u: Float, sw: Float, kind: String) {
+    when (kind) {
+        "clock_hourglass" -> {
+            nbRect(cx - u * 0.44f, baseY - u * 0.16f, u * 0.88f, u * 0.16f, Sand, u * 0.05f, sw)
+            nbRect(cx - u * 0.44f, baseY - u * 1.34f, u * 0.88f, u * 0.16f, Sand, u * 0.05f, sw)
+            val p = androidx.compose.ui.graphics.Path()
+            p.moveTo(cx - u * 0.34f, baseY - u * 1.18f)
+            p.lineTo(cx + u * 0.34f, baseY - u * 1.18f)
+            p.lineTo(cx + u * 0.04f, baseY - u * 0.68f)
+            p.lineTo(cx + u * 0.34f, baseY - u * 0.16f)
+            p.lineTo(cx - u * 0.34f, baseY - u * 0.16f)
+            p.lineTo(cx - u * 0.04f, baseY - u * 0.68f)
+            p.close()
+            drawPath(p, color = Cream)
+            drawPath(p, color = Ink, style = Stroke(width = sw))
+        }
+        "clock_digital" -> {
+            nbRect(cx - u * 0.60f, baseY - u * 0.70f, u * 1.20f, u * 0.70f, Ink, u * 0.10f, sw)
+            nbRect(cx - u * 0.44f, baseY - u * 0.56f, u * 0.88f, u * 0.40f, Mint, u * 0.06f, sw * 0.6f)
+        }
+        "clock_pendulum" -> {
+            nbRect(cx - u * 0.40f, baseY - u * 1.70f, u * 0.80f, u * 1.70f, Color(0xFF7B4A2B), u * 0.10f, sw)
+            nbCircle(cx, baseY - u * 1.30f, u * 0.26f, Cream, sw)
+            nbRect(cx - u * 0.04f, baseY - u * 1.00f, u * 0.08f, u * 0.55f, Sand, u * 0.03f, sw * 0.7f)
+            nbCircle(cx, baseY - u * 0.38f, u * 0.16f, Sand, sw)
+        }
+        else -> {
+            nbCircle(cx, baseY - u * 0.62f, u * 0.50f, Cream, sw)
+            nbRect(cx - u * 0.30f, baseY - u * 0.14f, u * 0.60f, u * 0.14f, Ink, u * 0.05f, sw * 0.7f)
+            drawLine(
+                color = Ink,
+                start = Offset(cx, baseY - u * 0.62f),
+                end = Offset(cx, baseY - u * 0.94f),
+                strokeWidth = sw,
+            )
+            drawLine(
+                color = Ink,
+                start = Offset(cx, baseY - u * 0.62f),
+                end = Offset(cx + u * 0.24f, baseY - u * 0.62f),
+                strokeWidth = sw,
+            )
+        }
     }
 }
 
@@ -1001,10 +1108,10 @@ private fun DrawScope.nbCircle(cx: Float, cy: Float, r: Float, fill: Color, sw: 
     drawCircle(color = Ink, radius = r, center = Offset(cx, cy), style = Stroke(width = sw))
 }
 
-private fun DrawScope.drawLamp(cx: Float, baseY: Float, u: Float, sw: Float) {
+private fun DrawScope.drawLamp(cx: Float, baseY: Float, u: Float, sw: Float, shade: Color) {
     nbRect(cx - u * 0.8f, baseY - u * 0.32f, u * 1.6f, u * 0.32f, Ink.copy(alpha = 0.85f), u * 0.12f, sw)
     nbRect(cx - u * 0.11f, baseY - u * 1.8f, u * 0.22f, u * 1.5f, Sand, u * 0.06f, sw)
-    nbRect(cx - u * 0.75f, baseY - u * 2.7f, u * 1.5f, u * 0.9f, Coral, u * 0.2f, sw)
+    nbRect(cx - u * 0.75f, baseY - u * 2.7f, u * 1.5f, u * 0.9f, shade, u * 0.2f, sw)
 }
 
 private fun DrawScope.drawCoffee(cx: Float, baseY: Float, u: Float, sw: Float) {

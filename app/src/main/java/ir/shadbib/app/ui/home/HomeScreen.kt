@@ -1,6 +1,7 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 
 package ir.shadbib.app.ui.home
+import androidx.compose.foundation.layout.fillMaxSize
 
 import android.widget.Toast
 import androidx.compose.animation.core.RepeatMode
@@ -77,7 +78,6 @@ import ir.shadbib.app.ui.components.ProgressRow
 import ir.shadbib.app.ui.components.SectionTitle
 import ir.shadbib.app.ui.theme.brandGradient
 import ir.shadbib.app.ui.theme.courseColor
-import androidx.compose.foundation.layout.fillMaxSize
 
 private val GENERAL_MOODS = listOf(
     "📚" to "مطالعه", "📖" to "کتابخوانی", "✏️" to "یادداشت", "🧮" to "ریاضی",

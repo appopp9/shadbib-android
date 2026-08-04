@@ -1,6 +1,9 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 
 package ir.shadbib.app.ui.profile
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.ui.draw.clip
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -102,10 +105,6 @@ import org.json.JSONObject
 import ir.shadbib.app.ui.components.GlassMenu
 import ir.shadbib.app.ui.components.GlassAction
 import androidx.compose.material.icons.rounded.Notifications
-import androidx.compose.ui.draw.clip
-import ir.shadbib.app.ui.components.ColumnScopeGlass
-import ir.shadbib.app.ui.components.GlassDivider
-import ir.shadbib.app.ui.components.GlassReactions
 
 class ProfileViewModel : ViewModel() {
     data class State(
@@ -613,6 +612,20 @@ private fun SettingsCard(vm: ProfileViewModel) {
     AppCard {
         Text("تنظیمات", style = MaterialTheme.typography.titleSmall)
         Spacer(Modifier.height(12.dp))
+
+        // پست خودکار ساعت مطالعهٔ روزانه
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("📚", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text("پست خودکار مطالعهٔ روزانه", style = MaterialTheme.typography.bodyLarge)
+                Text("هر روزی که مطالعه ثبت کنی، یک پست در صفحه‌ات ساخته و به‌روز می‌شود",
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(checked = prefs.autoStudyPost, onCheckedChange = { Store.setAutoStudyPost(it) })
+        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Spacer(Modifier.height(10.dp))
 
         // حریم خصوصی: آخرین بازدید (تلگرامی — دوطرفه)
         Row(verticalAlignment = Alignment.CenterVertically) {

@@ -58,6 +58,8 @@ object Pomodoro {
     }
 
     fun start(context: Context) {
+        // کرنومتر و پومودورو هرگز همزمان فعال نمی‌شوند
+        if (Chrono.running) Chrono.pause()
         val s = _state.value
         if (s.phase == Phase.IDLE) {
             _state.value = s.copy(phase = Phase.WORK, remainingSec = s.config.workMin * 60, running = true)

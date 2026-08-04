@@ -128,7 +128,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import ir.shadbib.app.ui.components.ColumnScopeGlass
 
 // ==================== ViewModel ====================
 class FeedViewModel : ViewModel() {
@@ -330,6 +329,12 @@ private sealed class FeedRoute {
 @Composable
 fun FeedScreen(vm: FeedViewModel = viewModel()) {
     var route by remember { mutableStateOf<FeedRoute>(FeedRoute.Home) }
+    // درخواست باز کردن پروفایل از تب‌های دیگر (مثلاً اتاق مطالعه)
+    val userReq by NavBus.openUser.collectAsState()
+    LaunchedEffect(userReq) {
+        val u = userReq
+        if (u != null) { route = FeedRoute.Profile(u); NavBus.consumeUser() }
+    }
     AnimatedContent(
         targetState = route,
         transitionSpec = {
@@ -529,17 +534,20 @@ fun PostCard(
     Column(Modifier.fillMaxWidth()
         .combinedClickable(enabled = clickable, onClick = onOpen, onLongClick = onLongPress)
         .padding(horizontal = 14.dp, vertical = 10.dp)) {
-        if (p.repostOf != null) {
+        // بازنشر با متن (نقل‌قول): متن خودِ کاربر بدنه است و پست اصلی در کارت نقل‌قول می‌آید
+        val isQuote = p.repostOf != null && !p.text.isNullOrBlank()
+        val asOriginal = p.repostOf != null && !isQuote
+        if (asOriginal) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 4.dp, start = 44.dp)) {
                 Icon(Icons.Rounded.Repeat, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
                 Spacer(Modifier.width(5.dp))
                 Text("${p.username} بازنشر کرد", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        val author = if (p.repostOf != null && p.repostUser != null) p.repostUser else p.username
-        val bodyText = if (p.repostOf != null && p.repostText != null) p.repostText else p.text
+        val author = if (asOriginal && p.repostUser != null) p.repostUser else p.username
+        val bodyText = if (asOriginal) p.repostText else p.text
         Row {
-            Box(Modifier.clickable { onUser(author) }) { Avatar(author, p.mood.takeIf { p.repostOf == null }, size = 42.dp, avatarUrl = if (p.repostOf == null) p.avatar else null) }
+            Box(Modifier.clickable { onUser(author) }) { Avatar(author, p.mood.takeIf { !asOriginal }, size = 42.dp, avatarUrl = if (!asOriginal) p.avatar else null) }
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -557,6 +565,10 @@ fun PostCard(
                     Spacer(Modifier.height(2.dp))
                     Text(bodyText, style = MaterialTheme.typography.bodyMedium, lineHeight = 21.sp)
                 }
+                if (isQuote) {
+                    Spacer(Modifier.height(7.dp))
+                    QuoteCard(p.repostUser, p.repostText) { p.repostUser?.let { u -> onUser(u) } }
+                }
                 PostMedia(p)
                 Spacer(Modifier.height(6.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -566,6 +578,29 @@ fun PostCard(
                     LikeStat(p.liked, p.likes, onLike, onCount = { onLikers() })
                     ActionStat(Icons.Rounded.BarChart, p.views, MaterialTheme.colorScheme.onSurfaceVariant) { }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuoteCard(author: String?, text: String?, onAuthor: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(horizontal = 11.dp, vertical = 9.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Avatar(author ?: "?", null, size = 20.dp)
+                Spacer(Modifier.width(6.dp))
+                Text(author ?: "کاربر", style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.clickable { onAuthor() })
+            }
+            if (!text.isNullOrBlank()) {
+                Spacer(Modifier.height(4.dp))
+                Text(text, style = MaterialTheme.typography.bodySmall, lineHeight = 19.sp, maxLines = 6)
             }
         }
     }

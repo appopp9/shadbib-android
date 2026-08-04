@@ -44,6 +44,7 @@ data class Prefs(
     val adFiles: Boolean = false,
     val adMaxMb: Int = 10,
     val lastStudyMode: Int = 0,
+    val autoStudyPost: Boolean = true,
 )
 
 object Store {
@@ -69,6 +70,7 @@ object Store {
     private val KEY_AD_FILE = booleanPreferencesKey("ad_files")
     private val KEY_AD_MAX = intPreferencesKey("ad_max_mb")
     private val KEY_STUDY_MODE = intPreferencesKey("study_mode")
+    private val KEY_AUTO_POST = booleanPreferencesKey("auto_study_post")
 
     private lateinit var appContext: Context
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -111,6 +113,7 @@ object Store {
                 adFiles = p[KEY_AD_FILE] ?: false,
                 adMaxMb = p[KEY_AD_MAX] ?: 10,
                 lastStudyMode = p[KEY_STUDY_MODE] ?: 0,
+                autoStudyPost = p[KEY_AUTO_POST] ?: true,
             )
         }
     }
@@ -197,6 +200,11 @@ object Store {
     fun setAutoDownload(images: Boolean, voice: Boolean, files: Boolean, maxMb: Int) {
         _prefs.value = _prefs.value.copy(adImages = images, adVoice = voice, adFiles = files, adMaxMb = maxMb)
         scope.launch { appContext.dataStore.edit { it[KEY_AD_IMG] = images; it[KEY_AD_VOICE] = voice; it[KEY_AD_FILE] = files; it[KEY_AD_MAX] = maxMb } }
+    }
+
+    fun setAutoStudyPost(v: Boolean) {
+        _prefs.value = _prefs.value.copy(autoStudyPost = v)
+        scope.launch { appContext.dataStore.edit { it[KEY_AUTO_POST] = v } }
     }
 
     fun setLastStudyMode(m: Int) {

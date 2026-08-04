@@ -14,6 +14,8 @@ object Chrono {
     val running: Boolean get() = Store.timer.value.running
 
     fun start() {
+        // کرنومتر و پومودورو هرگز همزمان فعال نمی‌شوند
+        if (Pomodoro.state.value.running) Pomodoro.pause()
         val t = Store.timer.value
         Store.saveTimer(TimerPersist(true, System.currentTimeMillis(), t.accumMs, t.courseId))
         notifySync()

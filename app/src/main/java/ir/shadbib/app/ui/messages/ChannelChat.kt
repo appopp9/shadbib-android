@@ -1,6 +1,7 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 
 package ir.shadbib.app.ui.messages
+import androidx.compose.material.icons.filled.Download
 
 import android.content.Context
 import android.net.Uri
@@ -89,7 +90,6 @@ import ir.shadbib.app.ui.components.GlassAction
 import ir.shadbib.app.ui.components.GlassDivider
 import ir.shadbib.app.ui.components.GlassReactions
 import androidx.compose.material.icons.rounded.Download
-import ir.shadbib.app.ui.components.ColumnScopeGlass
 
 class ChannelChatViewModel : ViewModel() {
     var channel: String = "public"

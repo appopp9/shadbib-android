@@ -1,6 +1,7 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 
 package ir.shadbib.app.ui.messages
+import androidx.compose.material.icons.filled.Download
 
 import android.Manifest
 import android.widget.Toast
@@ -97,7 +98,6 @@ import ir.shadbib.app.ui.components.GlassAction
 import ir.shadbib.app.ui.components.GlassDivider
 import ir.shadbib.app.ui.components.GlassReactions
 import androidx.compose.material.icons.rounded.Download
-import ir.shadbib.app.ui.components.ColumnScopeGlass
 
 @Composable
 fun DmThreadScreen(username: String, onBack: () -> Unit, vm: DmThreadViewModel = viewModel(key = "dm_" + username)) {

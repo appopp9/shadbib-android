@@ -120,6 +120,7 @@ class HomeViewModel : ViewModel() {
             try {
                 val body = JSONObject().put("minutes", minutes)
                 if (courseId != null) body.put("course_id", courseId)
+                body.put("share_post", if (ir.shadbib.app.core.Store.prefs.value.autoStudyPost) 1 else 0)
                 Api.post("study", body)
                 onResult(null)
                 refresh()

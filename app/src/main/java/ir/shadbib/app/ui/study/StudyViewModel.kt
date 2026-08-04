@@ -51,7 +51,8 @@ class StudyViewModel : ViewModel() {
         if (minutes < 1) { onResult("زمانی برای ثبت نیست"); return }
         viewModelScope.launch {
             runCatching {
-                Api.post("study", JSONObject().put("minutes", minutes).put("course_id", course))
+                Api.post("study", JSONObject().put("minutes", minutes).put("course_id", course)
+                    .put("share_post", if (ir.shadbib.app.core.Store.prefs.value.autoStudyPost) 1 else 0))
             }.onSuccess { onResult(null); ir.shadbib.app.core.RefreshBus.emit("study") }
                 .onFailure { onResult(it.message ?: "خطا در ثبت") }
         }

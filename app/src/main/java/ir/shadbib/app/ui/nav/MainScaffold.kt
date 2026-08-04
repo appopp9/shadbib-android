@@ -83,13 +83,15 @@ import java.util.Locale
 
 private data class Tab(val route: String, val label: String, val icon: ImageVector)
 
+/**
+ * پنج تب اصلی در نوار پایین — قبلاً هفت تب در ۶۴dp فشرده می‌شد و برچسب‌ها جا نمی‌شدند.
+ * کتابخانه و اجتماع از میانبرهای صفحهٔ اصلی (دسترسی سریع) باز می‌شوند.
+ */
 private val tabs = listOf(
     Tab("home", "خانه", Icons.Rounded.Home),
-    Tab("messages", "پیام‌ها", Icons.AutoMirrored.Rounded.Chat),
-    Tab("tasks", "تسک‌ها", Icons.Rounded.TaskAlt),
     Tab("room", "اتاق", Icons.Rounded.MenuBook),
-    Tab("community", "اجتماع", Icons.Rounded.Groups),
-    Tab("library", "کتابخانه", Icons.Rounded.LibraryMusic),
+    Tab("tasks", "تسک‌ها", Icons.Rounded.TaskAlt),
+    Tab("messages", "پیام‌ها", Icons.AutoMirrored.Rounded.Chat),
     Tab("profile", "پروفایل", Icons.Rounded.Person),
 )
 
@@ -139,6 +141,21 @@ fun MainScaffold() {
             NavBus.consumeRoom()
             if (currentRoute != "room") {
                 nav.navigate("room") {
+                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true; restoreState = true
+                }
+            }
+        }
+    }
+
+    // پرش به هر تب دلخواه از میانبرهای صفحهٔ اصلی (کتابخانه، اجتماع و …)
+    val openTabReq by NavBus.openTab.collectAsState()
+    LaunchedEffect(openTabReq) {
+        val route = openTabReq
+        if (route != null) {
+            NavBus.consumeTab()
+            if (currentRoute != route) {
+                nav.navigate(route) {
                     popUpTo(nav.graph.findStartDestination().id) { saveState = true }
                     launchSingleTop = true; restoreState = true
                 }

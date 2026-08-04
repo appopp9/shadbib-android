@@ -17,6 +17,10 @@ object NavBus {
     private val _openUser = MutableStateFlow<String?>(null)
     val openUser: StateFlow<String?> get() = _openUser
 
+    /** درخواست پرش به یک تب دلخواه (خانه، کتابخانه، اجتماع و …) از میانبرهای صفحهٔ اصلی. */
+    private val _openTab = MutableStateFlow<String?>(null)
+    val openTab: StateFlow<String?> get() = _openTab
+
     private val _openChannel = MutableStateFlow<Triple<String, String, String>?>(null)
     val openChannel: StateFlow<Triple<String, String, String>?> get() = _openChannel
 
@@ -31,6 +35,9 @@ object NavBus {
 
     fun requestUser(username: String) { _openUser.value = username }
     fun consumeUser() { _openUser.value = null }
+
+    fun requestTab(route: String) { _openTab.value = route }
+    fun consumeTab() { _openTab.value = null }
 
     fun requestChannel(key: String, title: String, emoji: String) { _openChannel.value = Triple(key, title, emoji) }
     fun consumeChannel() { _openChannel.value = null }

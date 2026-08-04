@@ -1,6 +1,7 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class, androidx.compose.material.ExperimentalMaterialApi::class)
 
 package ir.shadbib.app.ui.feed
+import androidx.compose.foundation.BorderStroke
 
 import android.net.Uri
 import android.widget.Toast

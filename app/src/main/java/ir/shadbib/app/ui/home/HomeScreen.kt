@@ -2,6 +2,7 @@
 
 package ir.shadbib.app.ui.home
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.BorderStroke
 
 import android.widget.Toast
 import androidx.compose.animation.core.RepeatMode

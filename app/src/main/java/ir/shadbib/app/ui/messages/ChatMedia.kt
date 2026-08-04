@@ -2,6 +2,7 @@
 
 package ir.shadbib.app.ui.messages
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.foundation.BorderStroke
 
 import android.app.DownloadManager
 import android.content.Context

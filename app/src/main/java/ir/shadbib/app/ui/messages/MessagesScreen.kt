@@ -1,6 +1,8 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 
 package ir.shadbib.app.ui.messages
+import androidx.compose.material3.IconButton
+import androidx.compose.foundation.BorderStroke
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.togetherWith

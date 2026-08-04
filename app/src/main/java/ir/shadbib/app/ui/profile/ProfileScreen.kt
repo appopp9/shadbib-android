@@ -4,6 +4,7 @@ package ir.shadbib.app.ui.profile
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.BorderStroke
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

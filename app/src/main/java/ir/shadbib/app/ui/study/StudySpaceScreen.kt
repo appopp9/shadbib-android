@@ -1,6 +1,7 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package ir.shadbib.app.ui.study
+import androidx.compose.foundation.BorderStroke
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility

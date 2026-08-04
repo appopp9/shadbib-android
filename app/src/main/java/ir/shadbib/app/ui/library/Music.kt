@@ -1,6 +1,7 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package ir.shadbib.app.ui.library
+import androidx.compose.foundation.BorderStroke
 
 import android.content.Context
 import android.net.Uri

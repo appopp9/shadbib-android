@@ -1,4 +1,5 @@
 package ir.shadbib.app.ui.auth
+import androidx.compose.foundation.BorderStroke
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement

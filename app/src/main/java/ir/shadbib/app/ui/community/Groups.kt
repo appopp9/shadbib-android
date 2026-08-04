@@ -1,10 +1,10 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 
 package ir.shadbib.app.ui.community
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.foundation.BorderStroke
 
 import android.content.Context
 import android.net.Uri

@@ -129,6 +129,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import ir.shadbib.app.ui.media.MediaViewer
 
 // ==================== ViewModel ====================
 class FeedViewModel : ViewModel() {
@@ -635,23 +636,20 @@ private fun PostMedia(p: Post) {
     val ctx = LocalContext.current
     when (p.mediaType) {
         "image" -> {
-            var full by remember { mutableStateOf(false) }
+            var full by remember(p.mediaPath) { mutableStateOf(false) }
             Spacer(Modifier.height(8.dp))
             AsyncImage(model = Api.mediaUrl(p.mediaPath), contentDescription = null, contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxWidth().height(230.dp).clip(RoundedCornerShape(16.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant).clickable { full = true })
-            if (full) androidx.compose.ui.window.Dialog(onDismissRequest = { full = false },
-                properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.95f)).clickable { full = false }, contentAlignment = Alignment.Center) {
-                    AsyncImage(model = Api.mediaUrl(p.mediaPath), contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth())
-                }
-            }
+            if (full) MediaViewer(p.mediaPath, "image") { full = false }
         }
         "video" -> {
             Spacer(Modifier.height(8.dp))
+            var vfull by remember(p.mediaPath) { mutableStateOf(false) }
+            if (vfull) MediaViewer(p.mediaPath, "video") { vfull = false }
             Box(Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(16.dp))
                 .background(Color.Black.copy(alpha = 0.85f))
-                .clickable { ChatMedia.openUrl(ctx, Api.mediaUrl(p.mediaPath)) }, contentAlignment = Alignment.Center) {
+                .clickable { vfull = true }, contentAlignment = Alignment.Center) {
                 Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.92f)) {
                     Icon(Icons.Rounded.Videocam, "پخش ویدئو", tint = Color.Black, modifier = Modifier.padding(16.dp).size(26.dp))
                 }

@@ -1,8 +1,8 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 
 package ir.shadbib.app.ui.home
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.fillMaxSize
 
 import android.widget.Toast
 import androidx.compose.animation.core.RepeatMode
@@ -166,12 +166,33 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                         Text("شروع مطالعه ▶", color = Color(0xFF06231A), style = MaterialTheme.typography.titleSmall,
                             modifier = Modifier.padding(horizontal = 24.dp, vertical = 11.dp))
                     }
+                    Spacer(Modifier.height(9.dp))
+                    Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.20f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.45f)),
+                        onClick = { NavBus.requestRoom() }) {
+                        Row(Modifier.padding(horizontal = 18.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("🐬", fontSize = 15.sp)
+                            Spacer(Modifier.width(6.dp))
+                            Text("با بقیه درس بخون", color = Color.White, style = MaterialTheme.typography.titleSmall)
+                        }
+                    }
                     Spacer(Modifier.height(10.dp))
                     Text("امروز: ${Fmt.minutes(state.today.totalMinutes)}", color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.labelLarge)
                 }
             }
             }
         }
+
+        // Streak hero
+        item {
+            ir.shadbib.app.ui.components.StreakCard(
+                streak = state.streak,
+                todayMinutes = state.today.totalMinutes,
+            ) { showCelebrate = true }
+        }
+
+        // Daily leaderboard
+        item { TopStudiersCard(onUser = { u -> NavBus.requestUser(u) }, onSeeAll = { NavBus.requestRoom() }) }
 
         // Announcement channel
 

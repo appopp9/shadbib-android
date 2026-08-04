@@ -1,4 +1,4 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 
 package ir.shadbib.app.ui.tasks
 import androidx.compose.foundation.BorderStroke
@@ -88,6 +88,10 @@ class TasksViewModel : ViewModel() {
 
     val state = MutableStateFlow(State())
 
+    /** ids of rows with an in-flight request */
+    val busy = MutableStateFlow<Set<Int>>(emptySet())
+    val adding = MutableStateFlow(false)
+
     init { refresh() }
 
     fun refresh() {
@@ -106,32 +110,55 @@ class TasksViewModel : ViewModel() {
 
     fun add(title: String, date: String, priority: String, onResult: (String?) -> Unit) {
         viewModelScope.launch {
+            adding.value = true
             try {
                 Api.post("tasks", JSONObject().put("title", title).put("task_date", date).put("priority", priority))
+                refreshNow()
                 onResult(null)
-                refresh()
                 ir.shadbib.app.core.RefreshBus.emit("home")
             } catch (e: Exception) {
                 onResult(e.message ?: "خطا")
+            } finally {
+                adding.value = false
             }
         }
     }
 
     fun toggle(task: TaskItem) {
         viewModelScope.launch {
+            busy.update { it + task.id }
+            // optimistic flip so the checkbox reacts instantly
+            state.update { s ->
+                fun flip(l: List<TaskItem>) = l.map { if (it.id == task.id) it.copy(done = !it.done) else it }
+                s.copy(today = flip(s.today), upcoming = flip(s.upcoming), history = flip(s.history))
+            }
             runCatching {
                 Api.put("tasks", JSONObject().put("done", if (task.done) 0 else 1), "id" to task.id.toString())
             }
-            refresh()
+            refreshNow()
+            busy.update { it - task.id }
             ir.shadbib.app.core.RefreshBus.emit("home")
         }
     }
 
     fun delete(task: TaskItem) {
         viewModelScope.launch {
+            busy.update { it + task.id }
             runCatching { Api.delete("tasks", "id" to task.id.toString()) }
-            refresh()
+            refreshNow()
+            busy.update { it - task.id }
             ir.shadbib.app.core.RefreshBus.emit("home")
+        }
+    }
+
+    private suspend fun refreshNow() {
+        try {
+            val today = TaskItem.list(Api.arr(Api.get("tasks")))
+            val upcoming = TaskItem.list(Api.arr(Api.get("tasks_upcoming")))
+            val history = TaskItem.list(Api.arr(Api.get("tasks_history")))
+            state.update { it.copy(loading = false, error = null, today = today, upcoming = upcoming, history = history) }
+        } catch (e: Exception) {
+            state.update { it.copy(loading = false) }
         }
     }
 }
@@ -144,6 +171,8 @@ fun TasksScreen(vm: TasksViewModel = viewModel()) {
     LaunchedEffect(Unit) { ir.shadbib.app.core.RefreshBus.events.collect { if (it == "tasks" || it == "all") vm.refresh() } }
     var tab by remember { mutableIntStateOf(0) }
     var showAdd by remember { mutableStateOf(false) }
+    val busy by vm.busy.collectAsState()
+    val adding by vm.adding.collectAsState()
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -214,13 +243,16 @@ fun TasksScreen(vm: TasksViewModel = viewModel()) {
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     itemsIndexed(list, key = { _, t -> t.id }) { i, task ->
-                        FadeSlideIn(i) {
-                            TaskRow(
-                                task = task,
-                                showDate = tab != 0,
-                                onToggle = { vm.toggle(task) },
-                                onDelete = { vm.delete(task) },
-                            )
+                        Box(Modifier.animateItemPlacement(androidx.compose.animation.core.tween(320))) {
+                            FadeSlideIn(i) {
+                                TaskRow(
+                                    task = task,
+                                    showDate = tab != 0,
+                                    busy = busy.contains(task.id),
+                                    onToggle = { vm.toggle(task) },
+                                    onDelete = { vm.delete(task) },
+                                )
+                            }
                         }
                     }
                     item { Spacer(Modifier.height(80.dp)) }
@@ -231,19 +263,20 @@ fun TasksScreen(vm: TasksViewModel = viewModel()) {
 
     if (showAdd) {
         AddTaskSheet(
+            adding = adding,
             onAdd = { title, date, priority ->
                 vm.add(title, date, priority) { err ->
                     Toast.makeText(ctx, err ?: "تسک اضافه شد ✅", Toast.LENGTH_SHORT).show()
+                    if (err == null) showAdd = false
                 }
-                showAdd = false
             },
-            onDismiss = { showAdd = false },
+            onDismiss = { if (!adding) showAdd = false },
         )
     }
 }
 
 @Composable
-private fun TaskRow(task: TaskItem, showDate: Boolean, onToggle: () -> Unit, onDelete: () -> Unit) {
+private fun TaskRow(task: TaskItem, showDate: Boolean, busy: Boolean = false, onToggle: () -> Unit, onDelete: () -> Unit) {
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     Surface(
         shape = MaterialTheme.shapes.large,
@@ -275,10 +308,16 @@ private fun TaskRow(task: TaskItem, showDate: Boolean, onToggle: () -> Unit, onD
                         },
                         checkShape,
                     )
-                    .clickable { haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove); onToggle() },
+                    .clickable(enabled = !busy) { haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove); onToggle() },
                 contentAlignment = Alignment.Center,
             ) {
-                if (task.done) {
+                if (busy) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = if (task.done) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                    )
+                } else if (task.done) {
                     Icon(
                         Icons.Rounded.Check,
                         contentDescription = null,
@@ -309,11 +348,11 @@ private fun TaskRow(task: TaskItem, showDate: Boolean, onToggle: () -> Unit, onD
                     }
                 }
             }
-            IconButton(onClick = onDelete) {
+            IconButton(onClick = onDelete, enabled = !busy) {
                 Icon(
                     Icons.Rounded.Delete,
                     contentDescription = "حذف",
-                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                    tint = MaterialTheme.colorScheme.error.copy(alpha = if (busy) 0.3f else 0.8f),
                     modifier = Modifier.size(20.dp),
                 )
             }
@@ -329,7 +368,7 @@ private fun PriorityPill(text: String, color: Color) {
 }
 
 @Composable
-private fun AddTaskSheet(onAdd: (String, String, String) -> Unit, onDismiss: () -> Unit) {
+private fun AddTaskSheet(adding: Boolean, onAdd: (String, String, String) -> Unit, onDismiss: () -> Unit) {
     var title by remember { mutableStateOf("") }
     var priority by remember { mutableStateOf("normal") }
     val days = remember { Fmt.upcomingDays(21) }
@@ -366,10 +405,21 @@ private fun AddTaskSheet(onAdd: (String, String, String) -> Unit, onDismiss: () 
             Spacer(Modifier.height(16.dp))
             Button(
                 onClick = { onAdd(title.trim(), dateIso, priority) },
-                enabled = title.isNotBlank(),
+                enabled = title.isNotBlank() && !adding,
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = MaterialTheme.shapes.medium,
-            ) { Text("افزودن تسک ➕", fontSize = 15.sp) }
+            ) {
+                if (adding) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp), strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("دارم اضافه می‌کنم…", fontSize = 15.sp)
+                } else {
+                    Text("افزودن تسک ➕", fontSize = 15.sp)
+                }
+            }
         }
     }
 }

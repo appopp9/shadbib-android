@@ -11,6 +11,9 @@ object NavBus {
     private val _openStudy = MutableStateFlow(false)
     val openStudy: StateFlow<Boolean> get() = _openStudy
 
+    private val _openRoom = MutableStateFlow(false)
+    val openRoom: StateFlow<Boolean> get() = _openRoom
+
     private val _openUser = MutableStateFlow<String?>(null)
     val openUser: StateFlow<String?> get() = _openUser
 
@@ -22,6 +25,9 @@ object NavBus {
 
     fun requestStudy() { _openStudy.value = true }
     fun consumeStudy() { _openStudy.value = false }
+
+    fun requestRoom() { _openRoom.value = true }
+    fun consumeRoom() { _openRoom.value = false }
 
     fun requestUser(username: String) { _openUser.value = username }
     fun consumeUser() { _openUser.value = null }

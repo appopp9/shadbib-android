@@ -1,8 +1,8 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 
 package ir.shadbib.app.ui.messages
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.filled.Download
 
 import android.app.DownloadManager
 import android.content.Context
@@ -94,6 +94,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import ir.shadbib.app.ui.media.MediaViewer
 
 /** Shared chat media helpers + composables used by DM, group, and channel chats. */
 object ChatMedia {
@@ -202,6 +203,18 @@ fun MediaBody(
             } else {
                 DownloadTile("📷 عکس", humanSize(fileSize), onLongPress = lp) { loaded = true }
             }
+            if (!caption.isNullOrBlank()) { Spacer(Modifier.height(4.dp)); Text(caption, style = MaterialTheme.typography.bodyMedium) }
+        }
+        "video" -> {
+            var vfull by remember(mediaPath) { mutableStateOf(false) }
+            Surface(shape = RoundedCornerShape(14.dp), color = Color.Black.copy(alpha = 0.85f),
+                modifier = Modifier.size(width = 240.dp, height = 190.dp)
+                    .combinedClickable(onClick = { vfull = true }, onLongClick = lp)) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.PlayArrow, "پخش ویدئو", tint = Color.White, modifier = Modifier.size(46.dp))
+                }
+            }
+            if (vfull) MediaViewer(mediaPath, "video") { vfull = false }
             if (!caption.isNullOrBlank()) { Spacer(Modifier.height(4.dp)); Text(caption, style = MaterialTheme.typography.bodyMedium) }
         }
         "voice" -> AudioBubble(url, duration ?: 0, "🎤", onLongPress = lp)

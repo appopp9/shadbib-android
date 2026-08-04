@@ -133,6 +133,19 @@ fun MainScaffold() {
         }
     }
 
+    val openRoomReq by NavBus.openRoom.collectAsState()
+    LaunchedEffect(openRoomReq) {
+        if (openRoomReq) {
+            NavBus.consumeRoom()
+            if (currentRoute != "room") {
+                nav.navigate("room") {
+                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true; restoreState = true
+                }
+            }
+        }
+    }
+
     val openStudy by NavBus.openStudy.collectAsState()
 
     Scaffold(

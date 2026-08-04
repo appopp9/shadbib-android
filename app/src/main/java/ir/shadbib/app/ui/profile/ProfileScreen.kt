@@ -1,10 +1,10 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 
 package ir.shadbib.app.ui.profile
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.BorderStroke
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -289,10 +289,22 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
             }
         }
 
+        item { SectionTitle("استریک من") }
+        item {
+            ir.shadbib.app.ui.components.StreakCard(
+                streak = state.streak,
+                todayMinutes = 0,
+                byDate = state.profile.daily.associate { it.date to it.minutes },
+            )
+        }
+
         item { SectionTitle("نمودار هفتگی") }
         item {
             AppCard { WeeklyChart(state.profile.daily.associate { it.date to it.minutes }) }
         }
+
+        item { Spacer(Modifier.height(2.dp)) }
+        item { StudyAnalyticsSection() }
 
         if (state.profile.courses.isNotEmpty()) {
             item { SectionTitle("مجموع درس‌ها") }

@@ -68,10 +68,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import ir.shadbib.app.core.Api
 import ir.shadbib.app.core.Fmt
 import ir.shadbib.app.core.NavBus
 import ir.shadbib.app.core.Store
 import ir.shadbib.app.core.fa
+import ir.shadbib.app.core.int
+import ir.shadbib.app.core.objects
+import ir.shadbib.app.core.strOrNull
 import ir.shadbib.app.data.Course
 import ir.shadbib.app.ui.components.AppCard
 import ir.shadbib.app.ui.components.Avatar
@@ -79,6 +83,7 @@ import ir.shadbib.app.ui.components.EmptyState
 import ir.shadbib.app.ui.components.FadeSlideIn
 import ir.shadbib.app.ui.components.ProgressRow
 import ir.shadbib.app.ui.components.SectionTitle
+import ir.shadbib.app.ui.components.StreakCard
 import ir.shadbib.app.ui.theme.brandGradient
 import ir.shadbib.app.ui.theme.courseColor
 
@@ -212,7 +217,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
                 rows = state.leaders,
                 loading = state.loading,
                 onUser = { u -> NavBus.requestUser(u) },
-                onSeeAll = { NavBus.requestTab("community") },
+                onSeeAll = { NavBus.requestRoomSheet("top") },
             )
         }
 
@@ -357,7 +362,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     }
 
     // ---- dialogs / sheets ----
-    if (showCelebrate) CelebrationDialog(state.streak) { showCelebrate = false }
+    if (showCelebrate) StreakSpotlightDialog(state.streak, state.today.totalMinutes) { showCelebrate = false }
 
     if (showNotifs) {
         ModalBottomSheet(sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), onDismissRequest = { showNotifs = false }) {
@@ -666,40 +671,147 @@ private fun FireStreak(streak: Int, onClick: () -> Unit) {
     }
 }
 
+private val STREAK_MILESTONES = listOf(3, 7, 14, 30, 60, 100, 200, 365)
+
+/**
+ * دیالوگ «شعلهٔ من» — جایگزین دیالوگ سادهٔ قبلی.
+ *
+ * همان کارت انیمیشنی پروفایل (حلقهٔ شعله، نبض، ۷ روز اخیر) را بازاستفاده می‌کند
+ * و رویش نشان‌های مرحله‌ای و انیمیشن ورود/درخشش اضافه می‌کند.
+ */
 @Composable
-private fun CelebrationDialog(streak: Int, onDismiss: () -> Unit) {
-    val t = rememberInfiniteTransition(label = "cel")
-    val s by t.animateFloat(1f, 1.3f, infiniteRepeatable(tween(500), RepeatMode.Reverse), label = "s")
-    val msg = when {
-        streak <= 0 -> "امروز شروع کن تا استریکت بالا بره! 💪"
-        streak < 3 -> "شروع خوبیه! ادامه بده تا عادت بشه 🌱"
-        streak < 7 -> "داری قوی می‌شی! نذار قطع شه 🔥"
-        streak < 30 -> "عالیه! تو یه قهرمان درس‌خونی ⭐"
-        else -> "افسانه‌ای! این استریک فوق‌العادست 🏆"
+private fun StreakSpotlightDialog(streak: Int, todayMinutes: Int, onDismiss: () -> Unit) {
+    var byDate by remember { mutableStateOf<Map<String, Int>>(emptyMap()) }
+    LaunchedEffect(Unit) {
+        runCatching {
+            val o = Api.obj(Api.get("study_calendar", "days" to "120"))
+            val m = HashMap<String, Int>()
+            o.optJSONArray("days")?.objects()?.forEach { d ->
+                val date = d.strOrNull("date")
+                if (date != null) m[date] = d.int("minutes")
+            }
+            m
+        }.onSuccess { byDate = it }
     }
+
+    var shown by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { shown = true }
+    val enter by animateFloatAsState(if (shown) 1f else 0.85f, tween(420), label = "streakEnter")
+
+    val t = rememberInfiniteTransition(label = "spotlight")
+    val shine by t.animateFloat(0f, 1f, infiniteRepeatable(tween(1400), RepeatMode.Reverse), label = "shine")
+
+    val next = STREAK_MILESTONES.firstOrNull { it > streak }
+    val msg = when {
+        streak <= 0 -> "امروز اولین جلسه رو بزن تا شعله روشن شه 🌱"
+        streak < 3 -> "شروع خوبیه! دو سه روز دیگه عادت می‌شه 💪"
+        streak < 7 -> "داری قوی می‌شی — نذار قطع شه 🔥"
+        streak < 30 -> "جدی شدی! این روند خیلی کمیابه ⭐"
+        streak < 100 -> "فوق‌العاده‌ای — در حد آتشفشان 🌋"
+        else -> "افسانه‌ای! کمتر کسی اینجا می‌رسه 🏆"
+    }
+
     Dialog(onDismissRequest = onDismiss) {
-        Surface(shape = MaterialTheme.shapes.extraLarge, color = Color.Transparent) {
-            Column(Modifier.background(brandGradient()).padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("🔥", fontSize = 80.sp, modifier = Modifier.scale(s))
-                Spacer(Modifier.height(8.dp))
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surface,
+            modifier = Modifier.fillMaxWidth().scale(enter),
+        ) {
+            Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("✨ 🔥 ✨", fontSize = 20.sp, modifier = Modifier.scale(1f + 0.18f * shine))
+                Spacer(Modifier.height(6.dp))
                 Text(
-                    "${streak.fa()} روز پیاپی!",
-                    color = Color.White,
-                    style = MaterialTheme.typography.headlineMedium,
+                    "شعلهٔ مطالعهٔ من",
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Black,
                 )
-                Spacer(Modifier.height(6.dp))
-                Text(msg, color = Color.White, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
-                Spacer(Modifier.height(6.dp))
-                Text("✨ 🎉 ⭐ 🌟 🎊 ✨", fontSize = 22.sp)
-                Spacer(Modifier.height(16.dp))
-                Surface(shape = CircleShape, color = Color.White, onClick = onDismiss) {
-                    Text(
-                        "بریم ادامه بدیم 🚀",
-                        color = Color(0xFF06231A),
-                        style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
-                    )
+                Spacer(Modifier.height(12.dp))
+
+                // کارت انیمیشنی دقیقاً مشابه پروفایل
+                StreakCard(streak = streak, todayMinutes = todayMinutes, byDate = byDate)
+
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    "نشان‌های مسیر",
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(8.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(STREAK_MILESTONES) { m ->
+                        val unlocked = streak >= m
+                        val isNext = next == m
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Surface(
+                                shape = CircleShape,
+                                color = if (unlocked) MaterialTheme.colorScheme.tertiaryContainer
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                border = BorderStroke(
+                                    if (isNext) 2.dp else 0.dp,
+                                    if (isNext) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.35f + 0.6f * shine)
+                                    else Color.Transparent,
+                                ),
+                                modifier = Modifier.size(if (isNext) 50.dp else 46.dp),
+                            ) {
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(if (unlocked) "🔥" else "🔒", fontSize = 13.sp)
+                                        Text(
+                                            m.fa(),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = if (unlocked) FontWeight.Bold else FontWeight.Normal,
+                                        )
+                                    }
+                                }
+                            }
+                            if (isNext) {
+                                Spacer(Modifier.height(3.dp))
+                                Text(
+                                    (m - streak).fa() + " روز",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    msg,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(14.dp))
+
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Surface(
+                        shape = CircleShape,
+                        color = Color.Transparent,
+                        onClick = { onDismiss(); NavBus.requestStudy() },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Box(Modifier.background(brandGradient()), contentAlignment = Alignment.Center) {
+                            Text(
+                                "بریم مطالعه 🚀",
+                                color = Color(0xFF06231A),
+                                style = MaterialTheme.typography.titleSmall,
+                                modifier = Modifier.padding(vertical = 12.dp),
+                            )
+                        }
+                    }
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                        onClick = onDismiss,
+                    ) {
+                        Text(
+                            "بستن",
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+                        )
+                    }
                 }
             }
         }

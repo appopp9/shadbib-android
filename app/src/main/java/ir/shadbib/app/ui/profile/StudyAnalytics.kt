@@ -97,12 +97,14 @@ private fun JalaliCalendarCard(byDate: Map<String, Int>) {
     val today = remember { Jalali.today() }
     var year by remember { mutableStateOf(today.year) }
     var month by remember { mutableStateOf(today.month) }
+    // روز انتخاب‌شده — با لمس هر خانه، تفکیک دروس همان روز زیر تقویم بالا می‌آید.
+    var selectedDay by remember { mutableStateOf<Int?>(null) }
 
     val len = daysInJalaliMonth(year, month)
     val firstG = Jalali.toGregorian(year, month, 1)
     val lead = weekDayIndexOf(firstG[0], firstG[1], firstG[2])
 
-    // \u062f\u0642\u06cc\u0642\u0647\u200c\u0647\u0627\u06cc \u0647\u0631 \u0631\u0648\u0632 \u0627\u06cc\u0646 \u0645\u0627\u0647
+    // دقیقه‌های هر روز این ماه
     val minutesOfDay = IntArray(len + 1)
     for (d in 1..len) {
         val g = Jalali.toGregorian(year, month, d)
@@ -112,12 +114,13 @@ private fun JalaliCalendarCard(byDate: Map<String, Int>) {
     val activeDays = (1..len).count { minutesOfDay[it] > 0 }
     val maxDay = (1..len).maxOfOrNull { minutesOfDay[it] } ?: 0
 
-    // \u0627\u0633\u062a\u0631\u06cc\u06a9: \u0631\u0648\u0632\u0647\u0627\u06cc \u067e\u0634\u062a\u200c\u0633\u0631\u0647\u0645 \u062a\u0627 \u0627\u0645\u0631\u0648\u0632
+    // استریک: روزهای پشت‌سرهم تا امروز
     val streak = remember(byDate) { computeStreak(byDate) }
 
     Card {
         Row(verticalAlignment = Alignment.CenterVertically) {
             NavBtn("\u203A") {
+                selectedDay = null
                 if (month == 12) { month = 1; year += 1 } else month += 1
             }
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -128,6 +131,7 @@ private fun JalaliCalendarCard(byDate: Map<String, Int>) {
                     color = MaterialTheme.colorScheme.tertiary)
             }
             NavBtn("\u2039") {
+                selectedDay = null
                 if (month == 1) { month = 12; year -= 1 } else month -= 1
             }
         }
@@ -153,11 +157,44 @@ private fun JalaliCalendarCard(byDate: Map<String, Int>) {
                     } else {
                         val d = day
                         val isToday = year == today.year && month == today.month && d == today.day
-                        DayCell(d, minutesOfDay[d], maxDay, isToday, Modifier.weight(1f))
+                        DayCell(
+                            day = d,
+                            minutes = minutesOfDay[d],
+                            maxDay = maxDay,
+                            isToday = isToday,
+                            isSelected = selectedDay == d,
+                            modifier = Modifier.weight(1f),
+                            onClick = { selectedDay = if (selectedDay == d) null else d },
+                        )
                         day += 1
                     }
                 }
             }
+        }
+
+        // پنل جزئیات روز انتخاب‌شده
+        val sel = selectedDay
+        if (sel != null && sel <= len) {
+            val g = Jalali.toGregorian(year, month, sel)
+            val iso = isoOf(g[0], g[1], g[2])
+            val isToday = year == today.year && month == today.month && sel == today.day
+            Spacer(Modifier.height(10.dp))
+            DayDetailPanel(
+                iso = iso,
+                label = sel.fa() + " " + Jalali.monthName(month) + " " + year.fa(),
+                minutes = minutesOfDay[sel],
+                isToday = isToday,
+                onClose = { selectedDay = null },
+            )
+        } else {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "روی هر روز بزن تا دروس همان روز رو ببینی 👆",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
 
         Spacer(Modifier.height(10.dp))
@@ -165,6 +202,134 @@ private fun JalaliCalendarCard(byDate: Map<String, Int>) {
             Stat("\u062c\u0645\u0639 \u0645\u0627\u0647", hm(monthTotal))
             Stat("\u0631\u0648\u0632\u0647\u0627\u06cc \u0641\u0639\u0627\u0644", activeDays.fa())
             Stat("\u0628\u0647\u062a\u0631\u06cc\u0646 \u0631\u0648\u0632", hm(maxDay))
+        }
+    }
+}
+
+// ==================== جزئیات یک روز ====================
+
+private data class DayCourse(val name: String, val icon: String, val minutes: Int)
+
+private fun parseDayCourses(o: org.json.JSONObject): List<DayCourse> =
+    o.optJSONArray("courses")?.objects()?.map { c ->
+        DayCourse(
+            c.strOrNull("name") ?: "بدون درس",
+            c.strOrNull("icon") ?: "\uD83D\uDCD6",
+            c.int("minutes"),
+        )
+    } ?: emptyList()
+
+/**
+ * تفکیک دروس یک روز خاص.
+ *
+ * برای امروز از study_today که قطعاً تفکیک دارد استفاده می‌شود؛ برای روزهای دیگر
+ * پارامتر date به study_by_course فرستاده می‌شود و فقط وقتی معتبر شمرده می‌شود که
+ * سرور همان تاریخ را در پاسخ برگرداند (تا اشتباهاً جمع کل بازه نشان داده نشود).
+ */
+private suspend fun loadDayCourses(iso: String, isToday: Boolean): List<DayCourse>? {
+    if (isToday) {
+        val t = runCatching { parseDayCourses(Api.obj(Api.get("study_today"))) }.getOrNull()
+        if (t != null) return t
+    }
+    return runCatching {
+        val o = Api.obj(Api.get("study_by_course", "date" to iso, "days" to "1"))
+        if (o.strOrNull("date") == iso) parseDayCourses(o) else null
+    }.getOrNull()
+}
+
+@Composable
+private fun DayDetailPanel(
+    iso: String,
+    label: String,
+    minutes: Int,
+    isToday: Boolean,
+    onClose: () -> Unit,
+) {
+    var courses by remember(iso) { mutableStateOf<List<DayCourse>?>(null) }
+    var loading by remember(iso) { mutableStateOf(minutes > 0) }
+
+    LaunchedEffect(iso, minutes) {
+        if (minutes <= 0) { courses = emptyList(); loading = false; return@LaunchedEffect }
+        loading = true
+        courses = loadDayCourses(iso, isToday)
+        loading = false
+    }
+
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.07f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(12.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        label + if (isToday) " — امروز" else "",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        "مجموع مطالعه: " + hm(minutes),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                NavBtn("×") { onClose() }
+            }
+            Spacer(Modifier.height(8.dp))
+
+            val list = courses
+            when {
+                minutes <= 0 -> Text(
+                    "این روز مطالعه‌ای برای تو ثبت نشده 🌱",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                loading -> Text(
+                    "در حال بارگذاری دروس…",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                list == null || list.isEmpty() -> Text(
+                    "تفکیک دروس این روز روی سرور موجود نیست — فقط مجموع روز ثبت شده.",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                else -> {
+                    val top = list.maxOf { it.minutes }.coerceAtLeast(1)
+                    list.sortedByDescending { it.minutes }.forEach { c ->
+                        Row(
+                            Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(c.icon, fontSize = 14.sp)
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                c.name,
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.width(80.dp),
+                                maxLines = 1,
+                            )
+                            Box(
+                                Modifier.weight(1f).height(12.dp).clip(RoundedCornerShape(6.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                            ) {
+                                Box(
+                                    Modifier.fillMaxWidth(c.minutes.toFloat() / top.toFloat())
+                                        .height(12.dp).clip(RoundedCornerShape(6.dp))
+                                        .background(MaterialTheme.colorScheme.primary),
+                                )
+                            }
+                            Spacer(Modifier.width(6.dp))
+                            Text(hm(c.minutes), style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -184,7 +349,15 @@ private fun computeStreak(byDate: Map<String, Int>): Int {
 }
 
 @Composable
-private fun DayCell(day: Int, minutes: Int, maxDay: Int, isToday: Boolean, modifier: Modifier) {
+private fun DayCell(
+    day: Int,
+    minutes: Int,
+    maxDay: Int,
+    isToday: Boolean,
+    isSelected: Boolean,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
     val frac = if (maxDay > 0) minutes.toFloat() / maxDay.toFloat() else 0f
     val base = MaterialTheme.colorScheme.primary
     val bg = when {
@@ -195,14 +368,18 @@ private fun DayCell(day: Int, minutes: Int, maxDay: Int, isToday: Boolean, modif
         Box(
             Modifier.fillMaxWidth().height(36.dp).clip(RoundedCornerShape(9.dp)).background(bg)
                 .then(
-                    if (isToday) Modifier.border(2.dp, base, RoundedCornerShape(9.dp))
-                    else Modifier
-                ),
+                    when {
+                        isSelected -> Modifier.border(2.dp, MaterialTheme.colorScheme.tertiary, RoundedCornerShape(9.dp))
+                        isToday -> Modifier.border(2.dp, base, RoundedCornerShape(9.dp))
+                        else -> Modifier
+                    }
+                )
+                .clickable { onClick() },
             contentAlignment = Alignment.Center,
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(day.fa(), style = MaterialTheme.typography.labelMedium,
-                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal)
+                    fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Normal)
                 if (minutes > 0) {
                     Text(minutes.fa(), fontSize = 8.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)

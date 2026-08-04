@@ -30,8 +30,20 @@ object NavBus {
     fun requestStudy() { _openStudy.value = true }
     fun consumeStudy() { _openStudy.value = false }
 
+    /** درخواست باز شدن یکی از شیت‌های اتاق مطالعه بلافاصله بعد از ورود ("top", "roster", "shop", …). */
+    private val _openRoomSheet = MutableStateFlow<String?>(null)
+    val openRoomSheet: StateFlow<String?> get() = _openRoomSheet
+
     fun requestRoom() { _openRoom.value = true }
     fun consumeRoom() { _openRoom.value = false }
+
+    /** هم‌زمان به اتاق مطالعه می‌رود و شیت خواسته‌شده را باز می‌کند. */
+    fun requestRoomSheet(sheet: String) {
+        _openRoomSheet.value = sheet
+        _openRoom.value = true
+    }
+
+    fun consumeRoomSheet() { _openRoomSheet.value = null }
 
     fun requestUser(username: String) { _openUser.value = username }
     fun consumeUser() { _openUser.value = null }

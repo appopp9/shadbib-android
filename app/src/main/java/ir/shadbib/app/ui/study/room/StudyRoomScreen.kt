@@ -153,6 +153,17 @@ fun StudyRoomScreen(vm: StudyRoomViewModel = viewModel()) {
     var cheerTarget by remember { mutableStateOf<RoomOccupant?>(null) }
     var toast by remember { mutableStateOf<String?>(null) }
 
+    // اگر از جایی مانند میانبر «همه» در کارت برترین‌های صفحهٔ اصلی وارد شدیم،
+    // همان شیت خواسته‌شده (مثلاً «بیشترین مطالعه») بلافاصله بالا می‌آید.
+    val roomSheetReq by NavBus.openRoomSheet.collectAsState()
+    LaunchedEffect(roomSheetReq) {
+        val s = roomSheetReq
+        if (s != null) {
+            NavBus.consumeRoomSheet()
+            overlay = s
+        }
+    }
+
     // ---------------- حضور وابسته به چرخهٔ عمر ----------------
     // تا وقتی این صفحه جلوی چشم کاربر است حضور برقرار است؛ همین که اپ مینیمایز
     // شود یا صفحه عوض شود، room_leave می‌رود و فوراً از اتاق حذف می‌شویم.

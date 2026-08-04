@@ -20,9 +20,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
-/** یک ردیف از جدول برترین‌های امروز. */
-data class Leader(val rank: Int, val username: String, val minutes: Int, val isMe: Boolean)
-
 class HomeViewModel : ViewModel() {
 
     data class State(
@@ -37,12 +34,6 @@ class HomeViewModel : ViewModel() {
         val friends: List<FriendStat> = emptyList(),
         val courses: List<Course> = emptyList(),
         val notifications: List<NotificationItem> = emptyList(),
-        // --- رتبه‌بندی امروز (برای مقایسهٔ مطالعهٔ من با بقیه) ---
-        val leaders: List<Leader> = emptyList(),
-        val myRank: Int? = null,
-        val participants: Int = 0,
-        val avgMinutes: Int = 0,
-        val topMinutes: Int = 0,
     )
 
     val state = MutableStateFlow(State())
@@ -82,20 +73,10 @@ class HomeViewModel : ViewModel() {
                     val friendsD = async { runCatching { FriendStat.list(Api.arr(Api.get("following_stats"))) }.getOrDefault(emptyList()) }
                     val coursesD = async { runCatching { Course.list(Api.arr(Api.get("courses"))) }.getOrDefault(emptyList()) }
                     val notifD = async { runCatching { NotificationItem.list(Api.arr(Api.get("notifications"))) }.getOrDefault(emptyList()) }
-                    val leadersD = async { runCatching { loadLeaders() }.getOrDefault(emptyList()) }
-                    val leaders = leadersD.await()
-                    val mine = leaders.firstOrNull { l -> l.isMe }
-                    val avg = if (leaders.isEmpty()) 0 else leaders.sumOf { l -> l.minutes } / leaders.size
-                    val top = leaders.maxOfOrNull { l -> l.minutes } ?: 0
                     state.update {
                         it.copy(
                             loading = false,
                             loaded = true,
-                            leaders = leaders,
-                            myRank = mine?.rank,
-                            participants = leaders.size,
-                            avgMinutes = avg,
-                            topMinutes = top,
                             today = todayD.await(),
                             streak = streakD.await(),
                             wakeup = wakeD.await(),
@@ -110,20 +91,6 @@ class HomeViewModel : ViewModel() {
                 state.update { it.copy(loading = false, error = e.message ?: "خطا در دریافت اطلاعات") }
             }
         }
-    }
-
-    /** جدول برترین‌های امروز — برای نمایش رتبهٔ کاربر و مقایسه با میانگین. */
-    private suspend fun loadLeaders(): List<Leader> {
-        val o = Api.obj(Api.get("study_top", "scope" to "today", "limit" to "20"))
-        val arr = o.optJSONArray("top") ?: return emptyList()
-        val me = Store.username
-        val out = ArrayList<Leader>()
-        for (i in 0 until arr.length()) {
-            val r = arr.getJSONObject(i)
-            val name = r.str("username")
-            out.add(Leader(r.optInt("rank", i + 1), name, r.int("minutes"), name == me))
-        }
-        return out
     }
 
     // ---------- Timer ----------

@@ -29,8 +29,13 @@ fun humanizeError(e: Throwable): String = when {
 }
 
 object Api {
-    const val BASE = "https://beautifulrabor.ir/shadbib/api.php"
-    const val MEDIA_BASE = "https://beautifulrabor.ir/shadbib/"
+    // NEW SERVER (studying.ir). Old host was beautifulrabor.ir/shadbib/
+    const val HOST = "studying.ir"
+    const val BASE = "https://studying.ir/api.php"
+    const val MEDIA_BASE = "https://studying.ir/"
+    // Media gateway: once media.php is live, signed links come from the server,
+    // so mediaUrl() below keeps working for both plain and signed paths.
+    const val MEDIA_GATEWAY = "https://studying.ir/media.php"
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)

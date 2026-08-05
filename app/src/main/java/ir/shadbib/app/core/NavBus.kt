@@ -20,6 +20,17 @@ object NavBus {
     private val _openChannel = MutableStateFlow<Triple<String, String, String>?>(null)
     val openChannel: StateFlow<Triple<String, String, String>?> get() = _openChannel
 
+    /*
+     * Generic tab jump.
+     *
+     * The bottom bar now only carries the four destinations people use every
+     * session. Tasks, library and community moved into the Home shortcut grid,
+     * and those tiles need a way to reach a route they can no longer tap in the
+     * bar, so they publish the route here and MainScaffold navigates.
+     */
+    private val _openRoute = MutableStateFlow<String?>(null)
+    val openRoute: StateFlow<String?> get() = _openRoute
+
     fun requestDm(username: String) { _openDm.value = username }
     fun consumeDm() { _openDm.value = null }
 
@@ -34,4 +45,7 @@ object NavBus {
 
     fun requestChannel(key: String, title: String, emoji: String) { _openChannel.value = Triple(key, title, emoji) }
     fun consumeChannel() { _openChannel.value = null }
+
+    fun requestRoute(route: String) { _openRoute.value = route }
+    fun consumeRoute() { _openRoute.value = null }
 }

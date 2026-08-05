@@ -404,16 +404,31 @@ fun PhoneInput(
                         .height(24.dp)
                         .background(cs.outlineVariant)
                 )
-                Box(Modifier.weight(1f)) {
+                /*
+                 * Both layers share one text style and one alignment box.
+                 * Before, the hint had no vertical padding while the field had
+                 * 14.dp, so the hint floated above the digits and looked like it
+                 * had escaped the box. maxLines plus softWrap false keeps a long
+                 * hint on one line instead of pushing the row taller.
+                 */
+                val digitStyle = MaterialTheme.typography.titleMedium.copy(
+                    textAlign = TextAlign.Start,
+                    textDirection = TextDirection.Ltr,
+                    letterSpacing = 0.5.sp,
+                )
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .padding(vertical = 14.dp),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
                     if (phone.isEmpty()) {
                         Text(
-                            "0912 345 6789",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                textAlign = TextAlign.Start,
-                                textDirection = TextDirection.Ltr,
-                                letterSpacing = 1.sp,
-                            ),
-                            color = cs.onSurfaceVariant.copy(alpha = 0.45f),
+                            IranPhone.HINT,
+                            style = digitStyle,
+                            color = cs.onSurfaceVariant.copy(alpha = 0.42f),
+                            maxLines = 1,
+                            softWrap = false,
                         )
                     }
                     BasicTextField(
@@ -421,14 +436,8 @@ fun PhoneInput(
                         onValueChange = { onPhoneChange(IranPhone.digitsOnly(it).take(11)) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 14.dp)
                             .onFocusChanged { focused = it.isFocused },
-                        textStyle = MaterialTheme.typography.titleMedium.copy(
-                            color = cs.onSurface,
-                            textAlign = TextAlign.Start,
-                            textDirection = TextDirection.Ltr,
-                            letterSpacing = 1.sp,
-                        ),
+                        textStyle = digitStyle.copy(color = cs.onSurface),
                         singleLine = true,
                         cursorBrush = SolidColor(cs.primary),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),

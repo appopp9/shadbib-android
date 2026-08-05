@@ -110,4 +110,7 @@ object IranPhone {
      */
     const val GROUP_1 = 4
     const val GROUP_2 = 7
+
+    /** Placeholder for the input, written in the same 4 3 4 shape. */
+    const val HINT = "0913 222 2222"
 }

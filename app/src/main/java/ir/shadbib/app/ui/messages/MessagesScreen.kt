@@ -1,14 +1,13 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 
 package ir.shadbib.app.ui.messages
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.material3.IconButton
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -22,14 +21,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.Send
+import androidx.compose.material.icons.rounded.Groups
+import androidx.compose.material.icons.rounded.HelpOutline
 import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.material.icons.rounded.PushPin
-import androidx.compose.material.icons.automirrored.rounded.Send
-import androidx.compose.material.icons.rounded.HelpOutline
-import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -53,16 +54,15 @@ import ir.shadbib.app.core.NavBus
 import ir.shadbib.app.core.Store
 import ir.shadbib.app.core.fa
 import ir.shadbib.app.data.Conversation
-import ir.shadbib.app.data.UserResult
 import ir.shadbib.app.data.StudyGroup
+import ir.shadbib.app.data.UserResult
 import ir.shadbib.app.ui.community.GroupChatScreen
 import ir.shadbib.app.ui.components.Avatar
 import ir.shadbib.app.ui.components.EmptyState
+import ir.shadbib.app.ui.components.GlassAction
+import ir.shadbib.app.ui.components.GlassMenu
 import ir.shadbib.app.ui.components.LoadingBox
 import kotlinx.coroutines.delay
-import ir.shadbib.app.ui.components.GlassMenu
-import ir.shadbib.app.ui.components.GlassAction
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 
 private sealed class MsgRoute {
     object Inbox : MsgRoute()

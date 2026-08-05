@@ -83,13 +83,18 @@ import java.util.Locale
 
 private data class Tab(val route: String, val label: String, val icon: ImageVector)
 
+/*
+ * Only four tabs now.
+ *
+ * Seven pills in one bar left every target under the 48.dp touch minimum and
+ * the labels never had room to appear. Tasks, community and library are
+ * one tap away from the Home shortcut grid instead, where they get a real
+ * label and a comfortable hit area.
+ */
 private val tabs = listOf(
     Tab("home", "خانه", Icons.Rounded.Home),
-    Tab("messages", "پیام‌ها", Icons.AutoMirrored.Rounded.Chat),
-    Tab("tasks", "تسک‌ها", Icons.Rounded.TaskAlt),
     Tab("room", "اتاق", Icons.Rounded.MenuBook),
-    Tab("community", "اجتماع", Icons.Rounded.Groups),
-    Tab("library", "کتابخانه", Icons.Rounded.LibraryMusic),
+    Tab("messages", "پیام‌ها", Icons.AutoMirrored.Rounded.Chat),
     Tab("profile", "پروفایل", Icons.Rounded.Person),
 )
 
@@ -139,6 +144,21 @@ fun MainScaffold() {
             NavBus.consumeRoom()
             if (currentRoute != "room") {
                 nav.navigate("room") {
+                    popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true; restoreState = true
+                }
+            }
+        }
+    }
+
+    // shortcut tiles on Home ask for a route that no longer lives in the bar
+    val routeReq by NavBus.openRoute.collectAsState()
+    LaunchedEffect(routeReq) {
+        val r = routeReq
+        if (r != null) {
+            NavBus.consumeRoute()
+            if (currentRoute != r) {
+                nav.navigate(r) {
                     popUpTo(nav.graph.findStartDestination().id) { saveState = true }
                     launchSingleTop = true; restoreState = true
                 }
@@ -198,7 +218,7 @@ private fun FloatingNavBar(currentRoute: String?, unread: Int, onSelect: (String
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 14.dp, vertical = 10.dp)
-            .height(64.dp),
+            .height(66.dp),
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
@@ -213,7 +233,7 @@ private fun FloatingNavBar(currentRoute: String?, unread: Int, onSelect: (String
                     tab = tab,
                     selected = currentRoute == tab.route,
                     badge = if (tab.route == "messages") unread else 0,
-                    modifier = Modifier.weight(if (currentRoute == tab.route) 1.7f else 1f),
+                    modifier = Modifier.weight(if (currentRoute == tab.route) 1.45f else 1f),
                 ) { onSelect(tab.route) }
             }
         }

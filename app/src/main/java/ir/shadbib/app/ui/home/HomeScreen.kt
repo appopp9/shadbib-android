@@ -1,16 +1,24 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 
 package ir.shadbib.app.ui.home
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.fillMaxSize
 
 import android.widget.Toast
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.EaseOutBack
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +28,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -35,6 +44,11 @@ import androidx.compose.material.icons.automirrored.rounded.Chat
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Groups
+import androidx.compose.material.icons.rounded.Insights
+import androidx.compose.material.icons.rounded.LibraryMusic
+import androidx.compose.material.icons.rounded.MenuBook
+import androidx.compose.material.icons.rounded.TaskAlt
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -57,9 +71,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -79,6 +100,9 @@ import ir.shadbib.app.ui.components.ProgressRow
 import ir.shadbib.app.ui.components.SectionTitle
 import ir.shadbib.app.ui.theme.brandGradient
 import ir.shadbib.app.ui.theme.courseColor
+import kotlinx.coroutines.launch
+import kotlin.math.cos
+import kotlin.math.sin
 
 private val GENERAL_MOODS = listOf(
     "📚" to "مطالعه", "📖" to "کتابخوانی", "✏️" to "یادداشت", "🧮" to "ریاضی",
@@ -183,12 +207,18 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
             }
         }
 
-        // Streak hero
+        // میانبرها — هر چه از نوار پایین حذف شد، اینجا در دسترس است
         item {
-            ir.shadbib.app.ui.components.StreakCard(
-                streak = state.streak,
-                todayMinutes = state.today.totalMinutes,
-            ) { showCelebrate = true }
+            ir.shadbib.app.ui.components.FadeSlideIn(2) {
+                QuickAccessGrid(
+                    onTasks = { NavBus.requestRoute("tasks") },
+                    onLibrary = { NavBus.requestRoute("library") },
+                    onCommunity = { NavBus.requestRoute("community") },
+                    onRoom = { NavBus.requestRoom() },
+                    onStats = { NavBus.requestRoute("profile") },
+                    onCourses = { showCourses = true },
+                )
+            }
         }
 
         // Daily leaderboard
@@ -372,51 +402,49 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     if (showCourses) CourseManagerSheet(vm, state.courses) { showCourses = false }
 }
 
+/*
+ * The only streak surface left on Home.
+ *
+ * The old full width streak card was decoration that pushed the real actions
+ * below the fold, so it is gone. The number still lives here and the
+ * celebration is now something you opt into by tapping this chip.
+ */
 @Composable
 private fun FireStreak(streak: Int, onClick: () -> Unit) {
+    val alive = streak > 0
+    val t = rememberInfiniteTransition(label = "streakChip")
+    val flicker by t.animateFloat(
+        1f, if (alive) 1.16f else 1f,
+        infiniteRepeatable(tween(1100, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "flicker",
+    )
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val press by animateFloatAsState(
+        if (pressed) 0.9f else 1f,
+        spring(dampingRatio = 0.42f, stiffness = 900f), label = "streakPress",
+    )
+    val haptic = LocalHapticFeedback.current
     Surface(
         shape = CircleShape,
         color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.75f),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.35f)),
-        onClick = onClick,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.35f)),
+        modifier = Modifier
+            .graphicsLayer { scaleX = press; scaleY = press }
+            .clip(CircleShape)
+            .clickable(interaction, indication = null) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onClick()
+            },
     ) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.LocalFireDepartment, "استریک",
-                tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(17.dp))
+                tint = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.size(17.dp).graphicsLayer { scaleX = flicker; scaleY = flicker })
             Spacer(Modifier.width(5.dp))
             Text(streak.fa(), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onTertiaryContainer)
             Spacer(Modifier.width(3.dp))
             Text("روز", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f))
-        }
-    }
-}
-
-@Composable
-private fun CelebrationDialog(streak: Int, onDismiss: () -> Unit) {
-    val t = rememberInfiniteTransition(label = "cel")
-    val s by t.animateFloat(1f, 1.3f, infiniteRepeatable(tween(500), RepeatMode.Reverse), label = "s")
-    val msg = when {
-        streak <= 0 -> "امروز شروع کن تا استریکت بالا بره! 💪"
-        streak < 3 -> "شروع خوبیه! ادامه بده تا عادت بشه 🌱"
-        streak < 7 -> "داری قوی می‌شی! نذار قطع شه 🔥"
-        streak < 30 -> "عالیه! تو یه قهرمان درس‌خونی ⭐"
-        else -> "افسانه‌ای! این استریک فوق‌العادست 🏆"
-    }
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(shape = MaterialTheme.shapes.extraLarge, color = Color.Transparent) {
-            Column(Modifier.background(brandGradient()).padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("🔥", fontSize = 80.sp, modifier = Modifier.scale(s))
-                Spacer(Modifier.height(8.dp))
-                Text("${streak.fa()} روز پیاپی!", color = Color.White, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black)
-                Spacer(Modifier.height(6.dp))
-                Text(msg, color = Color.White, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
-                Spacer(Modifier.height(6.dp))
-                Text("✨ 🎉 ⭐ 🌟 🎊 ✨", fontSize = 22.sp)
-                Spacer(Modifier.height(16.dp))
-                Surface(shape = CircleShape, color = Color.White, onClick = onDismiss) {
-                    Text("بریم ادامه بدیم 🚀", color = Color(0xFF06231A), style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp))
-                }
-            }
         }
     }
 }
@@ -462,6 +490,245 @@ private fun CourseManagerSheet(vm: HomeViewModel, courses: List<Course>, onDismi
                 }
             }
             if (courses.isEmpty()) EmptyState("🌱", "اولین درست رو بساز")
+        }
+    }
+}
+
+/* ---------------------------------------------------------------------- */
+/*  میانبرهای صفحهٔ اصلی                                              */
+/* ---------------------------------------------------------------------- */
+
+private data class Shortcut(
+    val label: String,
+    val icon: ImageVector,
+    val tint: Color,
+    val onClick: () -> Unit,
+)
+
+/**
+ * Two rows of three tiles, standing in for the tabs that left the bottom bar.
+ *
+ * A tile is a 46.dp icon plate over a label and the whole cell is tappable, so
+ * the target is far bigger than the 23.dp icon it replaces in a seven way bar.
+ */
+@Composable
+private fun QuickAccessGrid(
+    onTasks: () -> Unit,
+    onLibrary: () -> Unit,
+    onCommunity: () -> Unit,
+    onRoom: () -> Unit,
+    onStats: () -> Unit,
+    onCourses: () -> Unit,
+) {
+    val cs = MaterialTheme.colorScheme
+    val items = listOf(
+        Shortcut("تسک‌ها", Icons.Rounded.TaskAlt, cs.primary, onTasks),
+        Shortcut("کتابخانه", Icons.Rounded.LibraryMusic, cs.tertiary, onLibrary),
+        Shortcut("اجتماع", Icons.Rounded.Groups, cs.secondary, onCommunity),
+        Shortcut("با بقیه بخون", Icons.Rounded.MenuBook, cs.primary, onRoom),
+        Shortcut("آمار من", Icons.Rounded.Insights, cs.tertiary, onStats),
+        Shortcut("دروس من", Icons.Rounded.Edit, cs.secondary, onCourses),
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        items.chunked(3).forEachIndexed { rowIndex, row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row.forEachIndexed { i, sc ->
+                    ShortcutTile(sc, delayMs = (rowIndex * 3 + i) * 55, modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShortcutTile(sc: Shortcut, delayMs: Int, modifier: Modifier = Modifier) {
+    // staggered entrance, so the grid assembles itself instead of popping in
+    val appear = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(delayMs.toLong())
+        appear.animateTo(1f, tween(420, easing = EaseOutBack))
+    }
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val press by animateFloatAsState(
+        if (pressed) 0.93f else 1f,
+        spring(dampingRatio = 0.4f, stiffness = 1000f), label = "tilePress",
+    )
+    val haptic = LocalHapticFeedback.current
+    Surface(
+        modifier = modifier
+            .graphicsLayer {
+                val a = appear.value
+                scaleX = a * press
+                scaleY = a * press
+                alpha = a.coerceIn(0f, 1f)
+            }
+            .clip(MaterialTheme.shapes.large)
+            .clickable(interaction, indication = null) {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                sc.onClick()
+            },
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
+    ) {
+        Column(
+            Modifier.padding(vertical = 14.dp, horizontal = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                Modifier
+                    .size(46.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.linearGradient(
+                            listOf(sc.tint.copy(alpha = 0.26f), sc.tint.copy(alpha = 0.10f))
+                        )
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(sc.icon, sc.label, tint = sc.tint, modifier = Modifier.size(22.dp))
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                sc.label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+/* ---------------------------------------------------------------------- */
+/*  جشن استریک                                                            */
+/* ---------------------------------------------------------------------- */
+
+/**
+ * Opens only when the streak chip is tapped.
+ *
+ * Three layers run together: a slowly rotating sweep halo, twenty four confetti
+ * pieces on their own ballistic paths, and a spring scaled card. Everything is
+ * driven by two Animatables and one infinite transition, so once the entrance
+ * settles nothing else recomposes and the dialog stays cheap to keep on screen.
+ */
+@Composable
+private fun CelebrationDialog(streak: Int, onDismiss: () -> Unit) {
+    val enter = remember { Animatable(0f) }   // card entrance
+    val burst = remember { Animatable(0f) }   // confetti travel, 0 = at the flame
+    LaunchedEffect(Unit) {
+        launch { enter.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 260f)) }
+        burst.animateTo(1f, tween(2200, easing = LinearEasing))
+    }
+
+    val t = rememberInfiniteTransition(label = "cel")
+    val spin by t.animateFloat(
+        0f, 360f,
+        infiniteRepeatable(tween(9000, easing = LinearEasing)), label = "spin",
+    )
+    val pulse by t.animateFloat(
+        1f, 1.2f,
+        infiniteRepeatable(tween(760, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "pulse",
+    )
+
+    val msg = when {
+        streak <= 0 -> "امروز شروع کن تا استریکت بالا بره! 💪"
+        streak < 3 -> "شروع خوبیه! ادامه بده تا عادت بشه 🌱"
+        streak < 7 -> "داری قوی می‌شی! نذار قطع شه 🔥"
+        streak < 30 -> "عالیه! تو یه قهرمان درس‌خونی ⭐"
+        else -> "افسانه‌ای! این استریک فوق‌العادهست 🏆"
+    }
+
+    val confetti = listOf(
+        Color(0xFF4ADE9F), Color(0xFF38BDF8), Color(0xFFFBBF24),
+        Color(0xFFFB7185), Color(0xFFA78BFA), Color(0xFFFB923C),
+    )
+
+    Dialog(onDismissRequest = onDismiss) {
+        Box(contentAlignment = Alignment.Center) {
+
+            Canvas(Modifier.fillMaxWidth().height(430.dp)) {
+                val p = burst.value
+                if (p < 1f) {
+                    val cx = size.width / 2f
+                    val cy = size.height / 2f
+                    val fade = (1f - p).coerceIn(0f, 1f)
+                    repeat(24) { i ->
+                        // deterministic pseudo random, so no allocation per frame
+                        val rad = ((i * 37.7f) % 360f) * (3.14159265f / 180f)
+                        val speed = 130f + (i % 5) * 46f
+                        val x = cx + cos(rad) * speed * p
+                        val y = cy + sin(rad) * speed * p + 430f * p * p   // gravity
+                        drawCircle(
+                            color = confetti[i % confetti.size].copy(alpha = fade),
+                            radius = 5f + (i % 3) * 2.5f,
+                            center = Offset(x, y),
+                        )
+                    }
+                }
+            }
+
+            Surface(
+                shape = MaterialTheme.shapes.extraLarge,
+                color = Color.Transparent,
+                modifier = Modifier.graphicsLayer {
+                    val e = enter.value
+                    scaleX = e
+                    scaleY = e
+                    alpha = e.coerceIn(0f, 1f)
+                },
+            ) {
+                Column(
+                    Modifier.background(brandGradient()).padding(28.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Box(
+                            Modifier
+                                .size(150.dp)
+                                .graphicsLayer { rotationZ = spin }
+                                .background(
+                                    Brush.sweepGradient(
+                                        listOf(
+                                            Color.White.copy(alpha = 0f),
+                                            Color.White.copy(alpha = 0.30f),
+                                            Color.White.copy(alpha = 0f),
+                                            Color.White.copy(alpha = 0.22f),
+                                            Color.White.copy(alpha = 0f),
+                                        )
+                                    ),
+                                    CircleShape,
+                                )
+                        )
+                        Text("🔥", fontSize = 78.sp, modifier = Modifier.scale(pulse))
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        streak.fa() + " روز پیاپی!",
+                        color = Color.White,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Black,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        msg,
+                        color = Color.White.copy(alpha = 0.92f),
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(Modifier.height(18.dp))
+                    Surface(shape = CircleShape, color = Color.White, onClick = onDismiss) {
+                        Text(
+                            "بریم ادامه بدیم 🚀",
+                            color = Color(0xFF06231A),
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.padding(horizontal = 26.dp, vertical = 12.dp),
+                        )
+                    }
+                }
+            }
         }
     }
 }

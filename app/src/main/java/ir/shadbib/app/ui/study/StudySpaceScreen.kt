@@ -1,10 +1,10 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 
 package ir.shadbib.app.ui.study
-import androidx.compose.foundation.BorderStroke
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -76,9 +76,9 @@ import ir.shadbib.app.player.AmbientMixer
 import ir.shadbib.app.player.Chrono
 import ir.shadbib.app.player.PlayerHolder
 import ir.shadbib.app.player.Pomodoro
+import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 /* رنگ‌های فضای تمرکز — هماهنگ با پالت «شب مطالعه» */
 private val FocusBg = Brush.verticalGradient(listOf(Color(0xFF0B100E), Color(0xFF12241C), Color(0xFF0A121A)))

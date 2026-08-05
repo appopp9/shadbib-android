@@ -1,10 +1,7 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 
 package ir.shadbib.app.ui.community
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.runtime.mutableIntStateOf
 
 import android.content.Context
 import android.net.Uri
@@ -12,10 +9,11 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +30,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -39,14 +38,15 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ContentCopy
-import androidx.compose.material.icons.rounded.Reply
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Groups
-import androidx.compose.material.icons.rounded.PersonRemove
 import androidx.compose.material.icons.rounded.NotificationsOff
-import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.PersonRemove
+import androidx.compose.material.icons.rounded.Reply
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -61,12 +61,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -84,32 +87,29 @@ import ir.shadbib.app.data.GroupMessage
 import ir.shadbib.app.data.StudyGroup
 import ir.shadbib.app.ui.components.Avatar
 import ir.shadbib.app.ui.components.EmptyState
+import ir.shadbib.app.ui.components.GlassAction
+import ir.shadbib.app.ui.components.GlassDivider
+import ir.shadbib.app.ui.components.GlassMenu
+import ir.shadbib.app.ui.components.GlassReactions
 import ir.shadbib.app.ui.components.LoadingBox
 import ir.shadbib.app.ui.components.ProgressRow
 import ir.shadbib.app.ui.components.userColor
 import ir.shadbib.app.ui.messages.AttachSheet
 import ir.shadbib.app.ui.messages.BubbleBox
+import ir.shadbib.app.ui.messages.ChatInputBar
 import ir.shadbib.app.ui.messages.ChatMedia
 import ir.shadbib.app.ui.messages.ChatMusicPicker
 import ir.shadbib.app.ui.messages.ChatRow
-import ir.shadbib.app.ui.messages.ChatInputBar
 import ir.shadbib.app.ui.messages.JumpToBottom
-import ir.shadbib.app.ui.messages.SheetRow
-import ir.shadbib.app.ui.messages.UserProfileSheet
 import ir.shadbib.app.ui.messages.MediaBody
+import ir.shadbib.app.ui.messages.SheetRow
 import ir.shadbib.app.ui.messages.StickerPickerSheet
 import ir.shadbib.app.ui.messages.UploadBar
+import ir.shadbib.app.ui.messages.UserProfileSheet
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import ir.shadbib.app.ui.components.GlassMenu
-import ir.shadbib.app.ui.components.GlassAction
-import ir.shadbib.app.ui.components.GlassDivider
-import ir.shadbib.app.ui.components.GlassReactions
-import androidx.compose.ui.graphics.Color
-import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.Download
 
 class GroupsViewModel : ViewModel() {
     val groups = MutableStateFlow<List<StudyGroup>>(emptyList())

@@ -85,4 +85,29 @@ object IranPhone {
         if (d.length != 11) return d
         return d.substring(0, 4) + "***" + d.substring(7)
     }
+
+    /*
+     * Bidi isolation.
+     *
+     * The app runs right to left, so a bare latin number glued to Persian text
+     * gets reordered by the unicode bidi algorithm and "0912***6789 فرستادیم"
+     * can render with the digits in the wrong place. Wrapping the number in an
+     * isolate tells the layout engine to treat it as one opaque left to right
+     * chunk, whatever sits around it.
+     *
+     * U+2066 LEFT-TO-RIGHT ISOLATE ... U+2069 POP DIRECTIONAL ISOLATE
+     */
+    fun ltr(text: String): String = "\u2066" + text + "\u2069"
+
+    /** The masked number, already safe to drop inside a Persian sentence. */
+    fun maskLtr(raw: String): String = ltr(mask(raw))
+
+    /**
+     * Digit grouping used by the input field, kept here so the visual
+     * transformation and the offset mapping can never drift apart.
+     *
+     * A space is inserted after original index 4 and after original index 7.
+     */
+    const val GROUP_1 = 4
+    const val GROUP_2 = 7
 }

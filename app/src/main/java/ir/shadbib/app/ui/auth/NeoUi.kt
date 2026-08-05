@@ -35,6 +35,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,9 +56,16 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 /*
  * Neobrutalism kit for the auth flow.
@@ -347,6 +355,10 @@ fun NeoOtpBoxes(
                 .focusRequester(focus),
         )
 
+        // The comment below was already the intent, but inside an rtl app the Row
+        // silently flipped and the first typed digit landed in the rightmost box.
+        // Pinning the layout direction makes the intent actually hold.
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(
             Modifier
                 .fillMaxWidth()
@@ -397,6 +409,7 @@ fun NeoOtpBoxes(
                 }
             }
         }
+        }
     }
 }
 
@@ -446,11 +459,53 @@ fun NeoSteps(step: Int, total: Int, modifier: Modifier = Modifier) {
 }
 
 /**
+ * Groups the raw digits as 0912 345 6789 while typing.
+ *
+ * The offset mapping is the delicate part: Compose validates every cursor
+ * translation and throws if the two directions disagree, so both functions are
+ * derived from the same two split points and clamped to the real string length.
+ */
+private object PhoneDigitsTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val d = text.text.take(11)
+        val out = when {
+            d.length <= 4 -> d
+            d.length <= 7 -> d.substring(0, 4) + " " + d.substring(4)
+            else -> d.substring(0, 4) + " " + d.substring(4, 7) + " " + d.substring(7)
+        }
+
+        val mapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                var o = offset
+                if (offset > 4) o += 1
+                if (offset > 7) o += 1
+                return o.coerceIn(0, out.length)
+            }
+
+            override fun transformedToOriginal(offset: Int): Int {
+                var o = offset
+                if (offset > 4) o -= 1
+                if (offset > 8) o -= 1
+                return o.coerceIn(0, d.length)
+            }
+        }
+        return TransformedText(AnnotatedString(out), mapping)
+    }
+}
+
+/**
  * Dedicated Iranian phone input.
  *
  * The +98 chip is fixed and not editable, digits are always shown latin and
  * grouped, and the block turns mint the moment the number becomes valid, so the
  * user knows before pressing anything.
+ *
+ * Direction: the rest of the app is right to left, but a phone number is not
+ * Persian text, it is a number. Typed right aligned it reads backwards and the
+ * caret jumps to the wrong end. The whole input row is therefore pinned to left
+ * to right with LocalLayoutDirection, and the text style carries an explicit
+ * TextDirection.Ltr so the +98 chip stays on the left and digits fill rightward,
+ * exactly like every phone dialer.
  */
 @Composable
 fun PhoneField(
@@ -503,6 +558,7 @@ fun PhoneField(
                 .padding(horizontal = 12.dp),
             contentAlignment = Alignment.CenterStart,
         ) {
+          CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 // fixed country chip
                 Box(
@@ -522,7 +578,10 @@ fun PhoneField(
                     if (phone.isEmpty()) {
                         Text(
                             "0912 345 6789",
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                textAlign = TextAlign.Start,
+                                textDirection = TextDirection.Ltr,
+                            ),
                             color = Neo.Ink.copy(alpha = 0.3f),
                         )
                     }
@@ -533,7 +592,11 @@ fun PhoneField(
                         textStyle = MaterialTheme.typography.bodyLarge.copy(
                             color = Neo.Ink,
                             fontWeight = FontWeight.Black,
+                            textAlign = TextAlign.Start,
+                            textDirection = TextDirection.Ltr,
+                            letterSpacing = 1.sp,
                         ),
+                        visualTransformation = PhoneDigitsTransformation,
                         cursorBrush = SolidColor(Neo.Ink),
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Phone,
@@ -565,10 +628,11 @@ fun PhoneField(
                     )
                 }
             }
+          }
         }
         if (!plausible) {
             Text(
-                "\u0641\u0642\u0637 \u0634\u0645\u0627\u0631\u0647\u0654 \u0645\u0648\u0628\u0627\u06cc\u0644 \u0627\u06cc\u0631\u0627\u0646 \u2014 \u0645\u062b\u0644 09123456789",
+                "\u0641\u0642\u0637 \u0634\u0645\u0627\u0631\u0647\u0654 \u0645\u0648\u0628\u0627\u06cc\u0644 \u0627\u06cc\u0631\u0627\u0646 \u2014 \u0645\u062b\u0644 " + IranPhone.ltr("09123456789"),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = Neo.Coral,

@@ -51,8 +51,10 @@ import org.json.JSONObject
  *   register  step 2  otp_verify_register   { phone, code }        -> ticket
  *   register  step 3  register              { ticket, username, password } -> token
  *
- * Registration is open: no invite code. The sms budget is protected server side
- * by the per number, per ip and global daily caps in otp_rate_check().
+ * Registration is open: no invite code, so INVITE_CODE_REQUIRED must stay false
+ * in config.php or every request from this app is rejected before the sms is
+ * even attempted. The sms budget is protected server side by the per number,
+ * per ip and global daily caps in otp_rate_check().
  *   reset     step 1  otp_request_reset     { phone }
  *   reset     step 2  otp_verify_reset      { phone, code }        -> ticket
  *   reset     step 3  reset_password        { ticket, new_password }
@@ -127,10 +129,23 @@ fun AuthFlow() {
         val res = Api.obj(Api.post(action, JSONObject().put("phone", normalized)))
         resendIn = res.optInt("resend_in", 60)
         expiresIn = res.optInt("expires_in", 120)
-        // Shown only while SMS_ENABLED is false on the server, for our own testing.
+
+        /*
+         * dev_code only exists while SMS_ENABLED is false on the server. On a
+         * live server the field is absent, this branch never runs and the user
+         * sees the normal "we sent you a code" screen.
+         *
+         * While it does exist we prefill the boxes instead of printing the code
+         * and making the tester copy it by hand.
+         */
         val dev = res.optString("dev_code", "")
-        hint = if (dev.isNotEmpty()) "حالت آزمایشی: کد $dev" else null
-        code = ""
+        if (dev.length == 6) {
+            code = dev
+            hint = "پیامک روی سرور خاموش است — کد خودکار پر شد"
+        } else {
+            code = ""
+            hint = null
+        }
         step = purpose
     }
 
@@ -291,7 +306,7 @@ fun AuthFlow() {
 
                         Step.REG_CODE, Step.RESET_CODE -> {
                             Text(
-                                "\u06a9\u062f \u06f6 \u0631\u0642\u0645\u06cc \u0631\u0627 \u0628\u0647 " + IranPhone.mask(phone) + " \u0641\u0631\u0633\u062a\u0627\u062f\u06cc\u0645",
+                                "\u06a9\u062f \u06f6 \u0631\u0642\u0645\u06cc \u0631\u0627 \u0628\u0647 " + IranPhone.maskLtr(phone) + " \u0641\u0631\u0633\u062a\u0627\u062f\u06cc\u0645",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Neo.Ink,

@@ -8,7 +8,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,10 +17,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,33 +37,34 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import ir.shadbib.app.core.Api
 import ir.shadbib.app.core.Store
+import ir.shadbib.app.core.fa
 import ir.shadbib.app.core.str
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 /*
- * The whole entry experience, rebuilt in the neobrutalist style.
+ * The whole entry experience.
  *
  * Server contract, exactly as api.php and otp.php expose it:
  *   register  step 1  otp_request_register  { phone }
  *   register  step 2  otp_verify_register   { phone, code }        -> ticket
  *   register  step 3  register              { ticket, username, password } -> token
+ *   reset     step 1  otp_request_reset     { phone }
+ *   reset     step 2  otp_verify_reset      { phone, code }        -> ticket
+ *   reset     step 3  reset_password        { ticket, new_password }
  *
  * Registration is open: no invite code, so INVITE_CODE_REQUIRED must stay false
  * in config.php or every request from this app is rejected before the sms is
  * even attempted. The sms budget is protected server side by the per number,
  * per ip and global daily caps in otp_rate_check().
- *   reset     step 1  otp_request_reset     { phone }
- *   reset     step 2  otp_verify_reset      { phone, code }        -> ticket
- *   reset     step 3  reset_password        { ticket, new_password }
  *
- * Only Iranian mobile numbers are accepted, checked here and again on the server.
+ * Visual layer lives in AuthUi.kt and now follows the same Material 3 language
+ * as the rest of the app.
  */
 
 private enum class Step { LOGIN, REG_PHONE, REG_CODE, REG_PROFILE, RESET_PHONE, RESET_CODE, RESET_PASS }
@@ -89,6 +94,9 @@ fun AuthFlow() {
     var resendIn by remember { mutableStateOf(0) }
     var expiresIn by remember { mutableStateOf(0) }
     var shake by remember { mutableStateOf(0) }
+
+    // the last code we fired automatically, so a full box never resubmits twice
+    var autoSent by remember { mutableStateOf("") }
 
     // one ticking loop for both counters
     LaunchedEffect(step) {
@@ -124,7 +132,7 @@ fun AuthFlow() {
 
     fun askCode(purpose: Step) = run {
         val normalized = IranPhone.normalize(phone)
-            ?: throw Exception("شماره موبایل ایرانی معتبر وارد کن")
+            ?: throw Exception("شماره موبایل معتبر وارد کن")
         val action = if (purpose == Step.REG_CODE) "otp_request_register" else "otp_request_reset"
         val res = Api.obj(Api.post(action, JSONObject().put("phone", normalized)))
         resendIn = res.optInt("resend_in", 60)
@@ -132,18 +140,19 @@ fun AuthFlow() {
 
         /*
          * dev_code only exists while SMS_ENABLED is false on the server. On a
-         * live server the field is absent, this branch never runs and the user
-         * sees the normal "we sent you a code" screen.
+         * live server the field is absent and this branch never runs.
          *
-         * While it does exist we prefill the boxes instead of printing the code
-         * and making the tester copy it by hand.
+         * While it does exist we prefill the cells, and mark the code as already
+         * auto sent so the flow pauses instead of skipping the screen entirely.
          */
         val dev = res.optString("dev_code", "")
         if (dev.length == 6) {
             code = dev
+            autoSent = dev
             hint = "پیامک روی سرور خاموش است — کد خودکار پر شد"
         } else {
             code = ""
+            autoSent = ""
             hint = null
         }
         step = purpose
@@ -171,240 +180,257 @@ fun AuthFlow() {
 
     fun savedNewPassword() = run {
         Api.post("reset_password", JSONObject().put("ticket", ticket).put("new_password", password))
-        hint = "رمز جدید ثبت شد. حالا وارد شو 🎉"
+        hint = "رمز جدید ثبت شد. حالا وارد شو \ud83c\udf89"
         code = ""; ticket = ""; password = ""
         step = Step.LOGIN
     }
 
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(Neo.Cream),
-    ) {
+    // six digits typed on the pad submit on their own, like every otp screen
+    LaunchedEffect(code, step) {
+        val onCode = step == Step.REG_CODE || step == Step.RESET_CODE
+        if (onCode && code.length == 6 && code != autoSent && !loading) {
+            autoSent = code
+            delay(140)
+            verifyCode()
+        }
+    }
+
+    AuthBackdrop {
         Column(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .statusBarsPadding()
+                .navigationBarsPadding()
                 .imePadding()
-                .padding(horizontal = 22.dp, vertical = 34.dp),
+                .padding(horizontal = 20.dp, vertical = 26.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // ---- brand block: flat square, black outline, hard shadow ----
-            Box(
-                Modifier
-                    .size(88.dp)
-                    .neoBlock(Neo.Mint, lift = 7.dp, radius = 22.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text("\ud83d\udcda", style = MaterialTheme.typography.displaySmall)
-            }
-            Spacer(Modifier.height(20.dp))
+            AuthLogo()
+            Spacer(Modifier.height(14.dp))
             Text(
-                "\u0634\u0627\u062f\u0628\u06cc\u0628",
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Black,
-                color = Neo.Ink,
+                "شادبیب",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(Modifier.height(4.dp))
             Text(
                 when (step) {
-                    Step.LOGIN -> "\u062e\u0648\u0634 \u0628\u0631\u06af\u0634\u062a\u06cc! \u0628\u06cc\u0627 \u0627\u062f\u0627\u0645\u0647\u0654 \u062f\u0631\u0633 \u062e\u0648\u0646\u062f\u0646"
-                    Step.REG_PHONE, Step.REG_CODE, Step.REG_PROFILE -> "\u0633\u0627\u062e\u062a \u062d\u0633\u0627\u0628 \u062c\u062f\u06cc\u062f"
-                    else -> "\u0628\u0627\u0632\u06cc\u0627\u0628\u06cc \u0631\u0645\u0632 \u0639\u0628\u0648\u0631"
+                    Step.LOGIN -> "خوش برگشتی! بیا ادامهٔ درس خوندن"
+                    Step.REG_PHONE, Step.REG_CODE, Step.REG_PROFILE -> "ساخت حساب جدید"
+                    else -> "بازیابی رمز عبور"
                 },
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                color = Neo.Ink.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(20.dp))
 
-            // ---- wizard progress ----
-            val wizardStep = when (step) {
-                Step.REG_PHONE, Step.RESET_PHONE -> 0
-                Step.REG_CODE, Step.RESET_CODE -> 1
-                Step.REG_PROFILE, Step.RESET_PASS -> 2
-                else -> -1
-            }
-            if (wizardStep >= 0) {
-                NeoSteps(wizardStep, 3)
-                Spacer(Modifier.height(18.dp))
-            }
+            Box(Modifier.widthIn(max = 420.dp)) {
+                AuthCard {
+                    val wizardStep = when (step) {
+                        Step.REG_PHONE, Step.RESET_PHONE -> 0
+                        Step.REG_CODE, Step.RESET_CODE -> 1
+                        Step.REG_PROFILE, Step.RESET_PASS -> 2
+                        else -> -1
+                    }
+                    if (wizardStep >= 0) {
+                        AuthSteps(wizardStep)
+                        Spacer(Modifier.height(18.dp))
+                    }
 
-            if (error != null) {
-                NeoBanner(error ?: "", fill = Neo.Coral)
-                Spacer(Modifier.height(12.dp))
-            } else if (hint != null) {
-                NeoBanner(hint ?: "", fill = Neo.Sand)
-                Spacer(Modifier.height(12.dp))
-            }
+                    if (error != null) {
+                        AuthBanner(error ?: "", error = true)
+                        Spacer(Modifier.height(14.dp))
+                    } else if (hint != null) {
+                        AuthBanner(hint ?: "", error = false)
+                        Spacer(Modifier.height(14.dp))
+                    }
 
-            AnimatedContent(
-                targetState = step,
-                transitionSpec = {
-                    (slideInHorizontally(tween(300)) { w -> -w / 3 } + fadeIn(tween(220)))
-                        .togetherWith(slideOutHorizontally(tween(300)) { w -> w / 3 } + fadeOut(tween(160)))
-                },
-                label = "authStep",
-            ) { current ->
-                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    when (current) {
-                        Step.LOGIN -> {
-                            NeoField(
-                                value = username,
-                                onValueChange = { username = it },
-                                label = "\u0646\u0627\u0645 \u06a9\u0627\u0631\u0628\u0631\u06cc",
-                                placeholder = "hasan",
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            Spacer(Modifier.height(14.dp))
-                            NeoField(
-                                value = password,
-                                onValueChange = { password = it },
-                                label = "\u0631\u0645\u0632 \u0639\u0628\u0648\u0631",
-                                password = true,
-                                accent = Neo.Sky,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            Spacer(Modifier.height(20.dp))
-                            NeoButton(
-                                text = "\u0648\u0631\u0648\u062f \u0628\u0647 \u0634\u0627\u062f\u0628\u06cc\u0628",
-                                loading = loading,
-                                enabled = username.isNotBlank() && password.length >= 6,
-                            ) { doLogin(username, password) }
-                            Spacer(Modifier.height(6.dp))
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
-                                NeoGhostButton("\u062d\u0633\u0627\u0628 \u0646\u062f\u0627\u0631\u0645") {
-                                    error = null; hint = null; step = Step.REG_PHONE
+                    AnimatedContent(
+                        targetState = step,
+                        transitionSpec = {
+                            (slideInHorizontally(tween(300)) { w -> -w / 4 } + fadeIn(tween(220)))
+                                .togetherWith(slideOutHorizontally(tween(300)) { w -> w / 4 } + fadeOut(tween(160)))
+                        },
+                        label = "authStep",
+                    ) { current ->
+                        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                            when (current) {
+                                Step.LOGIN -> {
+                                    AuthField(
+                                        value = username,
+                                        onValueChange = { username = it },
+                                        label = "نام کاربری",
+                                        placeholder = "hasan",
+                                        leading = Icons.Rounded.Person,
+                                    )
+                                    Spacer(Modifier.height(12.dp))
+                                    AuthField(
+                                        value = password,
+                                        onValueChange = { password = it },
+                                        label = "رمز عبور",
+                                        password = true,
+                                        leading = Icons.Rounded.Lock,
+                                    )
+                                    Spacer(Modifier.height(20.dp))
+                                    AuthPrimaryButton(
+                                        text = "ورود به شادبیب",
+                                        loading = loading,
+                                        enabled = username.isNotBlank() && password.length >= 6,
+                                    ) { doLogin(username, password) }
+                                    Spacer(Modifier.height(4.dp))
+                                    Row(
+                                        Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                    ) {
+                                        AuthLink("حساب ندارم") {
+                                            error = null; hint = null; step = Step.REG_PHONE
+                                        }
+                                        AuthLink("رمزم را فراموش کردم") {
+                                            error = null; hint = null; phone = ""; step = Step.RESET_PHONE
+                                        }
+                                    }
                                 }
-                                NeoGhostButton("\u0631\u0645\u0632\u0645 \u0631\u0627 \u0641\u0631\u0627\u0645\u0648\u0634 \u06a9\u0631\u062f\u0645") {
-                                    error = null; hint = null; phone = ""; step = Step.RESET_PHONE
+
+                                Step.REG_PHONE, Step.RESET_PHONE -> {
+                                    Text(
+                                        "شمارهٔ موبایلت را وارد کن",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                    Spacer(Modifier.height(12.dp))
+                                    PhoneInput(
+                                        phone = phone,
+                                        onPhoneChange = { phone = it },
+                                    )
+                                    Spacer(Modifier.height(10.dp))
+                                    Text(
+                                        "یک کد ۶ رقمی برایت پیامک می‌شود",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    Spacer(Modifier.height(18.dp))
+                                    AuthPrimaryButton(
+                                        text = "ارسال کد تأیید",
+                                        loading = loading,
+                                        enabled = IranPhone.isValid(phone),
+                                    ) {
+                                        askCode(if (current == Step.REG_PHONE) Step.REG_CODE else Step.RESET_CODE)
+                                    }
+                                    AuthLink("بازگشت به ورود") {
+                                        error = null; hint = null; step = Step.LOGIN
+                                    }
+                                }
+
+                                Step.REG_CODE, Step.RESET_CODE -> {
+                                    Text(
+                                        "کد ۶ رقمی را به " + IranPhone.maskLtr(phone) + " فرستادیم",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                    Spacer(Modifier.height(16.dp))
+                                    OtpCells(
+                                        code = code,
+                                        error = error != null,
+                                        shake = shake,
+                                    )
+                                    Spacer(Modifier.height(12.dp))
+                                    Text(
+                                        if (expiresIn > 0)
+                                            "اعتبار کد: " + expiresIn.fa() + " ثانیه"
+                                        else
+                                            "کد منقضی شد، دوباره بگیر",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    Spacer(Modifier.height(16.dp))
+                                    CodeKeypad(
+                                        onDigit = { d ->
+                                            if (code.length < 6) {
+                                                error = null
+                                                code += d
+                                            }
+                                        },
+                                        onBackspace = {
+                                            if (code.isNotEmpty()) code = code.dropLast(1)
+                                        },
+                                        onPaste = { digits ->
+                                            error = null
+                                            code = digits.take(6)
+                                        },
+                                    )
+                                    Spacer(Modifier.height(16.dp))
+                                    AuthPrimaryButton(
+                                        text = "تأیید کد",
+                                        loading = loading,
+                                        enabled = code.length == 6,
+                                    ) { verifyCode() }
+                                    if (resendIn > 0) {
+                                        Text(
+                                            "ارسال مجدد تا " + resendIn.fa() + " ثانیه",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                            modifier = Modifier.padding(top = 12.dp),
+                                        )
+                                    } else {
+                                        AuthLink("ارسال مجدد کد") { askCode(current) }
+                                    }
+                                    AuthLink("ویرایش شماره") {
+                                        error = null; hint = null; code = ""; autoSent = ""
+                                        step = if (current == Step.REG_CODE) Step.REG_PHONE else Step.RESET_PHONE
+                                    }
+                                }
+
+                                Step.REG_PROFILE -> {
+                                    AuthField(
+                                        value = username,
+                                        onValueChange = { username = it },
+                                        label = "نام کاربری",
+                                        placeholder = "۳ تا ۳۰ کاراکتر",
+                                        leading = Icons.Rounded.Person,
+                                    )
+                                    Spacer(Modifier.height(12.dp))
+                                    AuthField(
+                                        value = password,
+                                        onValueChange = { password = it },
+                                        label = "رمز عبور",
+                                        placeholder = "حداقل ۶ کاراکتر",
+                                        password = true,
+                                        leading = Icons.Rounded.Lock,
+                                    )
+                                    Spacer(Modifier.height(20.dp))
+                                    AuthPrimaryButton(
+                                        text = "ساخت حساب و ورود",
+                                        loading = loading,
+                                        enabled = username.trim().length >= 3 && password.length >= 6,
+                                    ) { createAccount() }
+                                }
+
+                                Step.RESET_PASS -> {
+                                    AuthField(
+                                        value = password,
+                                        onValueChange = { password = it },
+                                        label = "رمز جدید",
+                                        placeholder = "حداقل ۶ کاراکتر",
+                                        password = true,
+                                        leading = Icons.Rounded.Lock,
+                                    )
+                                    Spacer(Modifier.height(20.dp))
+                                    AuthPrimaryButton(
+                                        text = "ثبت رمز جدید",
+                                        loading = loading,
+                                        enabled = password.length >= 6,
+                                    ) { savedNewPassword() }
                                 }
                             }
-                        }
-
-                        Step.REG_PHONE, Step.RESET_PHONE -> {
-                            PhoneField(
-                                phone = phone,
-                                onPhoneChange = { phone = IranPhone.digitsOnly(it).take(11) },
-                            )
-                            Spacer(Modifier.height(20.dp))
-                            NeoButton(
-                                text = "\u0627\u0631\u0633\u0627\u0644 \u06a9\u062f \u062a\u0623\u06cc\u06cc\u062f",
-                                loading = loading,
-                                enabled = IranPhone.isValid(phone),
-                            ) {
-                                askCode(if (current == Step.REG_PHONE) Step.REG_CODE else Step.RESET_CODE)
-                            }
-                            NeoGhostButton("\u0628\u0627\u0632\u06af\u0634\u062a \u0628\u0647 \u0648\u0631\u0648\u062f") {
-                                error = null; hint = null; step = Step.LOGIN
-                            }
-                        }
-
-                        Step.REG_CODE, Step.RESET_CODE -> {
-                            Text(
-                                "\u06a9\u062f \u06f6 \u0631\u0642\u0645\u06cc \u0631\u0627 \u0628\u0647 " + IranPhone.maskLtr(phone) + " \u0641\u0631\u0633\u062a\u0627\u062f\u06cc\u0645",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Neo.Ink,
-                                textAlign = TextAlign.Center,
-                            )
-                            Spacer(Modifier.height(16.dp))
-                            NeoOtpBoxes(
-                                code = code,
-                                onCodeChange = { code = it },
-                                shake = shake,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) { verifyCode() }
-                            Spacer(Modifier.height(14.dp))
-                            Text(
-                                if (expiresIn > 0)
-                                    "\u0627\u0639\u062a\u0628\u0627\u0631 \u06a9\u062f: " + expiresIn + " \u062b\u0627\u0646\u06cc\u0647"
-                                else
-                                    "\u06a9\u062f \u0645\u0646\u0642\u0636\u06cc \u0634\u062f\u060c \u062f\u0648\u0628\u0627\u0631\u0647 \u0628\u06af\u06cc\u0631",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = Neo.Ink.copy(alpha = 0.6f),
-                            )
-                            Spacer(Modifier.height(16.dp))
-                            NeoButton(
-                                text = "\u062a\u0623\u06cc\u06cc\u062f \u06a9\u062f",
-                                loading = loading,
-                                enabled = code.length == 6,
-                            ) { verifyCode() }
-                            if (resendIn > 0) {
-                                Text(
-                                    "\u0627\u0631\u0633\u0627\u0644 \u0645\u062c\u062f\u062f \u062a\u0627 " + resendIn + " \u062b\u0627\u0646\u06cc\u0647",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = Neo.Ink.copy(alpha = 0.45f),
-                                    modifier = Modifier.padding(top = 10.dp),
-                                )
-                            } else {
-                                NeoGhostButton("\u0627\u0631\u0633\u0627\u0644 \u0645\u062c\u062f\u062f \u06a9\u062f") {
-                                    askCode(current)
-                                }
-                            }
-                            NeoGhostButton("\u0648\u06cc\u0631\u0627\u06cc\u0634 \u0634\u0645\u0627\u0631\u0647") {
-                                error = null; hint = null; code = ""
-                                step = if (current == Step.REG_CODE) Step.REG_PHONE else Step.RESET_PHONE
-                            }
-                        }
-
-                        Step.REG_PROFILE -> {
-                            NeoField(
-                                value = username,
-                                onValueChange = { username = it },
-                                label = "\u0646\u0627\u0645 \u06a9\u0627\u0631\u0628\u0631\u06cc",
-                                placeholder = "\u06f3 \u062a\u0627 \u06f3\u06f0 \u06a9\u0627\u0631\u0627\u06a9\u062a\u0631",
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            Spacer(Modifier.height(14.dp))
-                            NeoField(
-                                value = password,
-                                onValueChange = { password = it },
-                                label = "\u0631\u0645\u0632 \u0639\u0628\u0648\u0631",
-                                placeholder = "\u062d\u062f\u0627\u0642\u0644 \u06f6 \u06a9\u0627\u0631\u0627\u06a9\u062a\u0631",
-                                password = true,
-                                accent = Neo.Sky,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            Spacer(Modifier.height(20.dp))
-                            NeoButton(
-                                text = "\u0633\u0627\u062e\u062a \u062d\u0633\u0627\u0628 \u0648 \u0648\u0631\u0648\u062f",
-                                loading = loading,
-                                enabled = username.trim().length >= 3 && password.length >= 6,
-                            ) { createAccount() }
-                        }
-
-                        Step.RESET_PASS -> {
-                            NeoField(
-                                value = password,
-                                onValueChange = { password = it },
-                                label = "\u0631\u0645\u0632 \u062c\u062f\u06cc\u062f",
-                                placeholder = "\u062d\u062f\u0627\u0642\u0644 \u06f6 \u06a9\u0627\u0631\u0627\u06a9\u062a\u0631",
-                                password = true,
-                                accent = Neo.Sky,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            Spacer(Modifier.height(20.dp))
-                            NeoButton(
-                                text = "\u062b\u0628\u062a \u0631\u0645\u0632 \u062c\u062f\u06cc\u062f",
-                                loading = loading,
-                                enabled = password.length >= 6,
-                            ) { savedNewPassword() }
                         }
                     }
                 }
             }
 
-            Spacer(Modifier.height(26.dp))
-            Text(
-                "\u062a\u0646\u0647\u0627 \u0634\u0645\u0627\u0631\u0647\u0654 \u0645\u0648\u0628\u0627\u06cc\u0644 \u0627\u06cc\u0631\u0627\u0646 \u067e\u0630\u06cc\u0631\u0641\u062a\u0647 \u0645\u06cc\u200c\u0634\u0648\u062f \ud83c\uddee\ud83c\uddf7",
-                style = MaterialTheme.typography.labelSmall,
-                color = Neo.Ink.copy(alpha = 0.4f),
-            )
+            Spacer(Modifier.height(22.dp))
         }
     }
 }

@@ -36,6 +36,7 @@ import ir.shadbib.app.core.Api
 import ir.shadbib.app.core.Fmt
 import ir.shadbib.app.core.Store
 import ir.shadbib.app.core.fa
+import ir.shadbib.app.core.humanizeError
 import ir.shadbib.app.core.int
 import ir.shadbib.app.core.str
 import ir.shadbib.app.ui.components.AppCard
@@ -74,7 +75,7 @@ fun TopStudiersCard(onUser: (String) -> Unit, onSeeAll: () -> Unit = {}) {
             }
             rows = out
         } catch (e: Exception) {
-            error = ir.shadbib.app.core.Api.humanizeError(e)
+            error = humanizeError(e)
         }
         loading = false
     }

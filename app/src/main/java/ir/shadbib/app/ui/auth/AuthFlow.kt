@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import ir.shadbib.app.core.Api
+import ir.shadbib.app.core.SmsCodeAutoFill
 import ir.shadbib.app.core.Store
 import ir.shadbib.app.core.fa
 import ir.shadbib.app.core.str
@@ -98,6 +99,9 @@ fun AuthFlow() {
     // the last code we fired automatically, so a full box never resubmits twice
     var autoSent by remember { mutableStateOf("") }
 
+    // bumped on every send, so a resend reopens the sms consent window
+    var smsSession by remember { mutableStateOf(0) }
+
     // one ticking loop for both counters
     LaunchedEffect(step) {
         while (true) {
@@ -155,6 +159,7 @@ fun AuthFlow() {
             autoSent = ""
             hint = null
         }
+        smsSession += 1
         step = purpose
     }
 
@@ -183,6 +188,23 @@ fun AuthFlow() {
         hint = "رمز جدید ثبت شد. حالا وارد شو \ud83c\udf89"
         code = ""; ticket = ""; password = ""
         step = Step.LOGIN
+    }
+
+    /*
+     * Reads the code out of the incoming sms so the user does not have to.
+     *
+     * Live only while the code screen is showing. Whatever it produces lands in
+     * the same `code` state the keypad writes to, so the auto submit below
+     * fires identically whether the digits were typed or captured.
+     */
+    SmsCodeAutoFill(
+        enabled = step == Step.REG_CODE || step == Step.RESET_CODE,
+        restartKey = smsSession,
+    ) { received ->
+        if (received != code) {
+            error = null
+            code = received
+        }
     }
 
     // six digits typed on the pad submit on their own, like every otp screen
@@ -306,7 +328,7 @@ fun AuthFlow() {
                                     )
                                     Spacer(Modifier.height(10.dp))
                                     Text(
-                                        "یک کد ۶ رقمی برایت پیامک می‌شود",
+                                        "یک کد ۶ رقمی برایت پیامک می‌شود — خودکار خوانده می‌شود",
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )

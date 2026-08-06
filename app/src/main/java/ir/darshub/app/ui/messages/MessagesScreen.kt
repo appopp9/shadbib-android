@@ -5,6 +5,7 @@ package ir.darshub.app.ui.messages
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -62,6 +63,7 @@ import ir.darshub.app.ui.components.EmptyState
 import ir.darshub.app.ui.components.GlassAction
 import ir.darshub.app.ui.components.GlassMenu
 import ir.darshub.app.ui.components.LoadingBox
+import ir.darshub.app.ui.theme.auroraBrush
 import kotlinx.coroutines.delay
 
 private sealed class MsgRoute {
@@ -161,7 +163,7 @@ private fun InboxScreen(vm: MessagesViewModel, onOpenDm: (String) -> Unit, onOpe
     LaunchedEffect(Unit) { ir.darshub.app.core.RefreshBus.events.collect { if (it == "dm" || it == "groups" || it == "all") vm.poll() } }
     LaunchedEffect(state.query) { delay(400); if (state.query.isNotBlank()) vm.search() }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize().background(ir.darshub.app.ui.theme.auroraBrush())) {
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Text("پیام‌ها", style = MaterialTheme.typography.headlineSmall)
@@ -277,7 +279,7 @@ private fun PinnedRow(emoji: String, title: String, subtitle: String, tint: Colo
 
 @Composable
 private fun ConversationRow(c: Conversation, pinned: Boolean = false, muted: Boolean = false, onClick: () -> Unit, onLongClick: () -> Unit = {}) {
-    Surface(color = if (pinned) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f) else Color.Transparent, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
+    Surface(color = if (pinned) MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.55f) else Color.Transparent, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().combinedClickable(onClick = onClick, onLongClick = onLongClick).padding(horizontal = 8.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Avatar(c.username, c.mood, size = 52.dp, online = c.isOnline, avatarUrl = c.avatar)
             Spacer(Modifier.width(12.dp))
@@ -303,7 +305,7 @@ private fun ConversationRow(c: Conversation, pinned: Boolean = false, muted: Boo
 
 @Composable
 private fun UserRow(u: UserResult, onClick: () -> Unit) {
-    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface,
+    Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLow,
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
         onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {

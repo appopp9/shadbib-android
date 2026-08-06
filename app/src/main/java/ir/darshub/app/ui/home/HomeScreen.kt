@@ -67,9 +67,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
@@ -96,8 +99,11 @@ import ir.darshub.app.ui.components.ErrorState
 import ir.darshub.app.ui.components.FadeSlideIn
 import ir.darshub.app.ui.components.FullLoading
 import ir.darshub.app.ui.components.SectionTitle
+import ir.darshub.app.ui.theme.DarsMotion
+import ir.darshub.app.ui.theme.auroraBrush
 import ir.darshub.app.ui.theme.brandGradient
 import ir.darshub.app.ui.theme.courseColor
+import ir.darshub.app.ui.theme.pressScale
 import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
@@ -105,30 +111,19 @@ import kotlin.math.sin
 private val GENERAL_MOODS = listOf(
     "📚" to "مطالعه", "📖" to "کتابخوانی", "✏️" to "یادداشت", "🧮" to "ریاضی",
     "🔬" to "علوم", "💻" to "برنامه‌نویسی", "🎯" to "تمرکز", "💪" to "پرتلاش",
-    "🔥" to "پر انرژی", "☕" to "قهوه‌ای", "🎵" to "موزیک", "😴" to "خوابالو",
-    "🌟" to "عالی", "🚀" to "سریع", "💡" to "ایده‌پرداز", "🌈" to "خلاق",
+    "🔥" to "پر انرژی", "☕" to "قهوه‌ای", "🎵" to "موزیک", "😴" to "خواب‌آلود",
+    "🥱" to "کسل", "😊" to "خوشحال", "🧠" to "فکری", "🫀" to "پرانرژی",
 )
+
 private val BOOK_MOODS = listOf(
-    "🧬" to "زیست", "🧪" to "شیمی", "⚡" to "فیزیک", "📐" to "ریاضی",
-    "🌍" to "زمین‌شناسی", "📊" to "حسابان", "📏" to "هندسه", "🔢" to "گسسته",
+    "🐛" to "زیست", "⚛️" to "فیزیک", "🧪" to "شیمی", "🔢" to "ریاضیات",
+    "📐" to "هندسه", "🌍" to "جغرافی", "🏛️" to "تاریخ", "✍️" to "ادبیات",
+    "🔤" to "زبان", "💻" to "برنامه‌نویسی", "📊" to "آمار", "🩺" to "پزشکی",
+    "⚖️" to "حقوق", "🧠" to "روانشناسی", "🖼️" to "هنر", "🎼" to "موسیقی",
 )
+
 private val COURSE_ICONS = listOf("📖", "📚", "✏️", "🧮", "🔬", "💻", "🧬", "🧪", "⚡", "📐", "🌍", "📊", "📏", "🔢", "🧠", "🗒️")
 
-/*
- * Home, redesigned around one question: "what does the student need right now?"
- *
- * Priority order on screen:
- *   1. Header   — greeting, mood, streak, notifications. Status lives here now.
- *   2. Hero     — today's minutes once, big and animated, with the start CTA.
- *   3. Wakeup   — a contextual banner that disappears after check-in.
- *   4. Shortcuts— one compact row; only destinations missing from the bottom bar.
- *   5. Friends  — the people the user follows, with today's progress.
- *   6. Groups   — the user's study groups with unread badges (new on Home).
- *   7. Leaders  — daily leaderboard for the competitive push.
- *
- * Gone: the separate "today study" card (minutes were shown three times), the
- * room/library/profile shortcut duplicates, and the always-visible wakeup card.
- */
 @Composable
 fun HomeScreen(vm: HomeViewModel = viewModel()) {
     val ctx = LocalContext.current
@@ -150,7 +145,7 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
         return
     }
     if (state.error != null && !state.loaded) {
-        Column(Modifier.fillMaxSize().padding(16.dp)) {
+        Column(Modifier.fillMaxSize().padding(16.dp).background(auroraBrush())) {
             Spacer(Modifier.height(20.dp))
             Surface(shape = MaterialTheme.shapes.extraLarge, color = Color.Transparent, onClick = { NavBus.requestStudy() }) {
                 Column(Modifier.fillMaxWidth().background(brandGradient()).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -164,94 +159,134 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
         return
     }
 
-    LazyColumn(Modifier.fillMaxWidth(), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Box(Modifier.fillMaxSize().background(auroraBrush())) {
+        LazyColumn(
+            Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(15.dp),
+        ) {
 
-        /* ۱ ─ هدر فشرده: سلام، مود، استریک، اعلان */
-        item {
-            FadeSlideIn(0) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("سلام، $username", style = MaterialTheme.typography.headlineSmall)
-                        Text(Fmt.todayFull(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        if (state.statusText.isNotBlank()) {
-                            Text(state.statusText, style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.clickable { showStatus = true })
-                        } else {
-                            Text("+ یه وضعیت بنویس…", style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-                                modifier = Modifier.clickable { showStatus = true })
-                        }
-                    }
-                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f), onClick = { showMood = true }) {
-                        Text(state.mood, fontSize = 17.sp, modifier = Modifier.padding(8.dp))
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    FireStreak(state.streak) { showCelebrate = true }
-                    Spacer(Modifier.width(2.dp))
-                    Box {
-                        IconButton(onClick = { showNotifs = true }) {
-                            Icon(Icons.Rounded.Notifications, contentDescription = "اعلان‌ها")
-                        }
-                        if (unreadNotif > 0) {
-                            Box(Modifier.align(Alignment.TopEnd).padding(10.dp).size(10.dp)
-                                .background(Color(0xFFEF4444), CircleShape))
-                        }
-                    }
-                }
-            }
-        }
-
-        /* ۲ ─ کارت قهرمان: امروز + شروع مطالعه */
-        item {
-            FadeSlideIn(1) { HeroTodayCard(state.today.totalMinutes, state.today.courses) }
-        }
-
-        /* ۳ ─ بنر بیداری: فقط تا وقتی ثبت نشده */
-        if (state.wakeup == null) {
+            /* ۱ ─ هدر: سلام، تاریخ، وضعیت، مود، استریک، اعلان */
             item {
-                FadeSlideIn(2) {
-                    WakeupBanner(onCheckin = {
-                        vm.checkinWakeup { err -> Toast.makeText(ctx, err ?: "صبح بخیر ☀️ ساعت بیداری ثبت شد", Toast.LENGTH_SHORT).show() }
-                    })
+                FadeSlideIn(0) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("سلام، ", style = MaterialTheme.typography.headlineSmall,
+                                    color = MaterialTheme.colorScheme.onBackground)
+                                Text(username, style = MaterialTheme.typography.headlineSmall,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                            Spacer(Modifier.height(2.dp))
+                            Text(Fmt.todayFull(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(Modifier.height(5.dp))
+                            val statusInter = remember { MutableInteractionSource() }
+                            Row(
+                                Modifier
+                                    .clip(CircleShape)
+                                    .pressScale(statusInter, pressedScale = 0.96f)
+                                    .clickable(statusInter, indication = null) { showStatus = true }
+                                    .background(MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.8f))
+                                    .padding(horizontal = 11.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Box(Modifier.size(6.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    if (state.statusText.isNotBlank()) state.statusText else "+ یه وضعیت بنویس…",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (state.statusText.isNotBlank()) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        val moodInter = remember { MutableInteractionSource() }
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f),
+                            modifier = Modifier
+                                .pressScale(moodInter, pressedScale = 0.9f)
+                                .shadow(6.dp, CircleShape, ambientColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)),
+                            onClick = { showMood = true },
+                            interactionSource = moodInter,
+                        ) {
+                            Text(state.mood, fontSize = 17.sp, modifier = Modifier.padding(9.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        FireStreak(state.streak) { showCelebrate = true }
+                        Spacer(Modifier.width(4.dp))
+                        Box {
+                            val bellInter = remember { MutableInteractionSource() }
+                            IconButton(
+                                onClick = { showNotifs = true },
+                                modifier = Modifier.pressScale(bellInter, pressedScale = 0.88f),
+                                interactionSource = bellInter,
+                            ) {
+                                Icon(Icons.Rounded.Notifications, contentDescription = "اعلان‌ها",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            if (unreadNotif > 0) {
+                                Box(Modifier.align(Alignment.TopEnd).padding(10.dp).size(10.dp)
+                                    .background(Color(0xFFEF4444), CircleShape))
+                            }
+                        }
+                    }
                 }
             }
-        }
 
-        /* ۴ ─ میانبرها: یک ردیف چهارتایی، بدون تکرار تب‌های پایین */
-        item {
-            FadeSlideIn(3) {
-                QuickRow(
-                    onTasks = { NavBus.requestRoute("tasks") },
-                    onLibrary = { NavBus.requestRoute("library") },
-                    onCommunity = { NavBus.requestRoute("community") },
-                    onCourses = { showCourses = true },
-                )
+            /* ۲ ─ کارت قهرمان: امروز + شروع مطالعه */
+            item {
+                FadeSlideIn(1) { HeroTodayCard(state.today.totalMinutes, state.today.courses) }
             }
-        }
 
-        /* ۵ ─ دوستان دنبال‌شده */
-        item {
-            FadeSlideIn(4) { FriendsSection(state.friends) }
-        }
-
-        /* ۶ ─ گروه‌های مطالعه‌ی کاربر */
-        item {
-            FadeSlideIn(5) { GroupsSection(state.groups, state.groupUnread) }
-        }
-
-        /* ۷ ─ برترین‌های امروز */
-        item {
-            FadeSlideIn(6) {
-                TopStudiersCard(
-                    myMinutes = state.today.totalMinutes,
-                    onUser = { u -> NavBus.requestUser(u) },
-                    onSeeAll = { NavBus.requestRoom("top") },
-                )
+            /* ۳ ─ بنر بیداری: فقط تا وقتی ثبت نشده */
+            if (state.wakeup == null) {
+                item {
+                    FadeSlideIn(2) {
+                        WakeupBanner(onCheckin = {
+                            vm.checkinWakeup { err -> Toast.makeText(ctx, err ?: "صبح بخیر ☀️ ساعت بیداری ثبت شد", Toast.LENGTH_SHORT).show() }
+                        })
+                    }
+                }
             }
-        }
 
-        item { Spacer(Modifier.height(4.dp)) }
+            /* ۴ ─ میانبرها: یک ردیف چهارتایی، بدون تکرار تب‌های پایین */
+            item {
+                FadeSlideIn(3) {
+                    QuickRow(
+                        onTasks = { NavBus.requestRoute("tasks") },
+                        onLibrary = { NavBus.requestRoute("library") },
+                        onCommunity = { NavBus.requestRoute("community") },
+                        onCourses = { showCourses = true },
+                    )
+                }
+            }
+
+            /* ۵ ─ دوستان دنبال‌شده */
+            item {
+                FadeSlideIn(4) { FriendsSection(state.friends) }
+            }
+
+            /* ۶ ─ گروه‌های مطالعه‌ی کاربر */
+            item {
+                FadeSlideIn(5) { GroupsSection(state.groups, state.groupUnread) }
+            }
+
+            /* ۷ ─ برترین‌های امروز */
+            item {
+                FadeSlideIn(6) {
+                    TopStudiersCard(
+                        myMinutes = state.today.totalMinutes,
+                        onUser = { u -> NavBus.requestUser(u) },
+                        onSeeAll = { NavBus.requestRoom("top") },
+                    )
+                }
+            }
+
+            item { Spacer(Modifier.height(4.dp)) }
+        }
     }
 
     // ---- dialogs / sheets ----
@@ -260,19 +295,21 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
     if (showNotifs) {
         ModalBottomSheet(sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), onDismissRequest = { showNotifs = false }) {
             Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
-                Text("🔔 اعلان‌ها", style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(10.dp))
-                if (centerNotifs.any { !it.read }) {
-                    Surface(shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                        onClick = { ir.darshub.app.notify.NotifCenter.markAllRead(ctx) }, modifier = Modifier.fillMaxWidth()) {
-                        Row(Modifier.padding(horizontal = 12.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Rounded.DoneAll, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text("علامت‌گذاری همه به‌عنوان خوانده‌شده", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🔔 اعلان‌ها", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.weight(1f))
+                    if (centerNotifs.any { !it.read }) {
+                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                            onClick = { ir.darshub.app.notify.NotifCenter.markAllRead(ctx) }) {
+                            Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Rounded.DoneAll, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(7.dp))
+                                Text("همه خوانده‌شود", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                            }
                         }
                     }
-                    Spacer(Modifier.height(8.dp))
                 }
+                Spacer(Modifier.height(12.dp))
                 if (centerNotifs.isEmpty()) EmptyState("🔕", "فعلاً اعلانی نداری")
                 else centerNotifs.take(30).forEach { n ->
                     Row(Modifier.fillMaxWidth().padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -341,22 +378,28 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
 /* ---------------------------------------------------------------------- */
 
 /*
- * The one place today's total lives.
- *
- * Before the redesign the same number appeared in the hero badge, in a dedicated
- * "today study" card and again inside the leaderboard. Everything merged here:
- * a big animated counter, up to three per-course mini bars for context, and the
- * two actions that actually start a session. The room is a secondary tonal pill
- * because it already has its own bottom tab.
+ * جایی که عدد امروز زندگی می‌کند. شمارندهٔ بزرگ انیمیشنی، نوارهای درسی
+ * و دو اکشن اصلی شروع جلسه. کارت با هالهٔ روشن در گوشه، عمق بیشتری دارد.
  */
 @Composable
 private fun HeroTodayCard(totalMinutes: Int, courses: List<CourseMinutes>) {
     val counted by animateFloatAsState(totalMinutes.toFloat(), tween(900), label = "heroCount")
-    Surface(shape = MaterialTheme.shapes.extraLarge, color = Color.Transparent, onClick = { NavBus.requestStudy() }) {
+    Surface(
+        shape = MaterialTheme.shapes.extraLarge,
+        color = Color.Transparent,
+        onClick = { NavBus.requestStudy() },
+        modifier = Modifier.shadow(
+            24.dp, MaterialTheme.shapes.extraLarge,
+            ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+            spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+        ),
+    ) {
         Column(Modifier.background(brandGradient()).padding(horizontal = 18.dp, vertical = 16.dp)) {
+            // هالهٔ روشن گوشه
+            Box(Modifier.fillMaxWidth().height(0.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("مطالعه‌ی امروز", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.labelLarge)
+                    Text("مطالعه‌ی امروز", color = Color.White.copy(alpha = 0.88f), style = MaterialTheme.typography.labelLarge)
                     Spacer(Modifier.height(2.dp))
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(counted.toInt().fa(), color = Color.White, fontWeight = FontWeight.Black, fontSize = 40.sp, maxLines = 1)
@@ -369,35 +412,37 @@ private fun HeroTodayCard(totalMinutes: Int, courses: List<CourseMinutes>) {
                 val pulse by t.animateFloat(1f, 1.09f,
                     infiniteRepeatable(tween(1600, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "pulse")
                 Box(
-                    Modifier.size(62.dp).graphicsLayer { scaleX = pulse; scaleY = pulse }
-                        .background(Color.White.copy(alpha = 0.20f), CircleShape),
+                    Modifier.size(64.dp).graphicsLayer { scaleX = pulse; scaleY = pulse }
+                        .background(Color.White.copy(alpha = 0.18f), CircleShape)
+                        .shadow(10.dp, CircleShape, ambientColor = Color.White.copy(alpha = 0.4f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("▶", color = Color.White, fontSize = 21.sp)
+                    Text("▶", color = Color.White, fontSize = 22.sp)
                 }
             }
 
             if (courses.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
                 val maxM = courses.maxOf { it.minutes }.coerceAtLeast(1)
-                courses.sortedByDescending { it.minutes }.take(3).forEach { c ->
-                    val frac by animateFloatAsState(c.minutes.toFloat() / maxM, tween(700), label = "heroBar")
-                    Row(Modifier.padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(c.icon, fontSize = 13.sp)
+                courses.take(3).forEach { c ->
+                    val frac by animateFloatAsState((c.minutes.toFloat() / maxM).coerceIn(0.06f, 1f), tween(800), label = "heroBar")
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(c.icon, fontSize = 12.sp)
                         Spacer(Modifier.width(6.dp))
-                        Text(c.name, color = Color.White.copy(alpha = 0.92f), style = MaterialTheme.typography.labelMedium,
-                            maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(88.dp))
-                        Box(Modifier.weight(1f).height(5.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.22f))) {
-                            Box(Modifier.fillMaxWidth(frac).height(5.dp).clip(CircleShape).background(Color.White))
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Text(Fmt.minutes(c.minutes), color = Color.White, style = MaterialTheme.typography.labelSmall)
+                        Text(c.name, color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(Fmt.minutes(c.minutes), color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.labelSmall)
                     }
+                    Spacer(Modifier.height(4.dp))
+                    Box(Modifier.fillMaxWidth().height(5.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.22f))) {
+                        Box(Modifier.fillMaxWidth(frac).height(5.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.95f)))
+                    }
+                    Spacer(Modifier.height(7.dp))
                 }
             }
 
-            Spacer(Modifier.height(14.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(9.dp), verticalAlignment = Alignment.CenterVertically) {
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Surface(shape = CircleShape, color = Color.White, onClick = { NavBus.requestStudy() }, modifier = Modifier.weight(1f)) {
                     Row(Modifier.padding(vertical = 12.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                         Text("شروع مطالعه ▶", color = Color(0xFF06231A), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
@@ -430,7 +475,11 @@ private fun WakeupBanner(onCheckin: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("☀️", fontSize = 20.sp)
+            Box(
+                Modifier.size(38.dp).clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center,
+            ) { Text("☀️", fontSize = 18.sp) }
             Spacer(Modifier.width(10.dp))
             Text("ساعت بیداری امروزت رو ثبت کن", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
             Surface(shape = CircleShape, color = MaterialTheme.colorScheme.tertiary, onClick = onCheckin) {
@@ -496,20 +545,21 @@ private fun ShortcutTile(sc: Shortcut, delayMs: Int, modifier: Modifier = Modifi
             .clickable(interaction, indication = null) {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 sc.onClick()
-            },
+            }
+            .shadow(8.dp, MaterialTheme.shapes.large, ambientColor = sc.tint.copy(alpha = 0.18f), spotColor = sc.tint.copy(alpha = 0.22f)),
         shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
     ) {
         Column(
-            Modifier.padding(vertical = 11.dp, horizontal = 4.dp),
+            Modifier.padding(vertical = 12.dp, horizontal = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(
                 Modifier
-                    .size(44.dp)
+                    .size(46.dp)
                     .clip(CircleShape)
-                    .background(Brush.linearGradient(listOf(sc.tint.copy(alpha = 0.26f), sc.tint.copy(alpha = 0.10f)))),
+                    .background(Brush.linearGradient(listOf(sc.tint.copy(alpha = 0.3f), sc.tint.copy(alpha = 0.1f)))),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon3D(sc.emoji, size = 26.dp, contentDescription = sc.label)
@@ -543,7 +593,7 @@ private fun FriendsSection(friends: List<FriendStat>) {
         Spacer(Modifier.height(10.dp))
         if (friends.isEmpty()) {
             Surface(
-                shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface,
+                shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLow,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
                 onClick = { NavBus.requestRoute("community") }, modifier = Modifier.fillMaxWidth(),
             ) {
@@ -570,10 +620,13 @@ private fun FriendsSection(friends: List<FriendStat>) {
 @Composable
 private fun FriendCard(f: FriendStat, maxMinutes: Int) {
     val frac by animateFloatAsState((f.todayMinutes.toFloat() / maxMinutes).coerceIn(0f, 1f), tween(700), label = "frBar")
+    val interaction = remember { MutableInteractionSource() }
     Surface(
-        shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface,
+        shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLow,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
         onClick = { NavBus.requestUser(f.username) },
+        interactionSource = interaction,
+        modifier = Modifier.pressScale(interaction, pressedScale = 0.95f),
     ) {
         Column(Modifier.width(128.dp).padding(11.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Avatar(f.username, f.mood, size = 46.dp, online = f.isOnline, avatarUrl = f.avatar)
@@ -586,26 +639,28 @@ private fun FriendCard(f: FriendStat, maxMinutes: Int) {
                 Box(Modifier.fillMaxWidth(frac).height(4.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
             }
             Spacer(Modifier.height(9.dp))
-            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), onClick = { NavBus.requestDm(f.username) }) {
-                Row(Modifier.padding(horizontal = 12.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.AutoMirrored.Rounded.Chat, "پیام", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(13.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("پیام", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                }
+            val dmInter = remember { MutableInteractionSource() }
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                onClick = { NavBus.requestDm(f.username) },
+                interactionSource = dmInter,
+                modifier = Modifier.pressScale(dmInter, pressedScale = 0.9f),
+            ) {
+                Icon(Icons.AutoMirrored.Rounded.Chat, "پیام", tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(7.dp).size(16.dp))
             }
         }
     }
 }
 
 /* ---------------------------------------------------------------------- */
-/*  گروه‌های مطالعه — جدید در صفحه‌ی اصلی                                */
+/*  گروه‌های مطالعه                                                       */
 /* ---------------------------------------------------------------------- */
 
 /*
- * The user's study groups were only reachable through the messages tab. They
- * are a core motivator, so they now live on Home with unread badges; one tap
- * jumps straight into the group chat via NavBus. A trailing tile offers create/
- * discover, and the empty state explains why groups matter.
+ * A horizontal row of group cards; tapping a card jumps straight into the
+ * group chat via NavBus. A trailing tile offers create/join via the hub.
  */
 @Composable
 private fun GroupsSection(groups: List<StudyGroup>, unread: Map<Int, Int>) {
@@ -614,16 +669,16 @@ private fun GroupsSection(groups: List<StudyGroup>, unread: Map<Int, Int>) {
         Spacer(Modifier.height(10.dp))
         if (groups.isEmpty()) {
             Surface(
-                shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface,
+                shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainerLow,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
                 onClick = { NavBus.requestGroupsHome() }, modifier = Modifier.fillMaxWidth(),
             ) {
                 Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("🌱", fontSize = 22.sp)
+                    Text("🛋️", fontSize = 22.sp)
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("هنوز عضو گروهی نیستی", style = MaterialTheme.typography.titleSmall)
-                        Text("با بقیه بخون — انگیزه چند برابر می‌شه", style = MaterialTheme.typography.labelSmall,
+                        Text("هنوز گروهی نداری", style = MaterialTheme.typography.titleSmall)
+                        Text("با رفیق‌هات یه اتاق مطالعه بساز", style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Text("‹", fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -632,7 +687,7 @@ private fun GroupsSection(groups: List<StudyGroup>, unread: Map<Int, Int>) {
         } else {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(groups, key = { it.id }) { g -> GroupCard(g, unread[g.id] ?: 0) }
-                item(key = "new_group_tile") { NewGroupTile() }
+                item { NewGroupTile() }
             }
         }
     }
@@ -640,18 +695,24 @@ private fun GroupsSection(groups: List<StudyGroup>, unread: Map<Int, Int>) {
 
 @Composable
 private fun GroupCard(g: StudyGroup, unread: Int) {
+    val interaction = remember { MutableInteractionSource() }
     Surface(
-        shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surface,
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
         onClick = { NavBus.requestGroup(g.id, g.name) },
+        interactionSource = interaction,
+        modifier = Modifier.pressScale(interaction, pressedScale = 0.95f),
     ) {
-        Column(Modifier.width(142.dp).padding(12.dp)) {
+        Column(Modifier.width(118.dp).padding(11.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Box {
-                Avatar(g.username, size = 40.dp, avatarUrl = g.avatar)
+                GroupAvatar(g.avatar, g.name, 44.dp)
                 if (unread > 0) {
-                    Surface(
-                        shape = CircleShape, color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.align(Alignment.TopStart),
+                    Box(
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .background(MaterialTheme.colorScheme.error, CircleShape),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(unread.fa(), color = MaterialTheme.colorScheme.onError, style = MaterialTheme.typography.labelSmall,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp))
@@ -663,6 +724,27 @@ private fun GroupCard(g: StudyGroup, unread: Int) {
             Spacer(Modifier.height(2.dp))
             Text(g.memberCount.fa() + " عضو", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+    }
+}
+
+@Composable
+private fun GroupAvatar(avatar: String?, name: String, size: androidx.compose.ui.unit.Dp) {
+    val url = ir.darshub.app.core.Api.mediaUrl(avatar)
+    if (url != null) {
+        coil.compose.AsyncImage(
+            model = url,
+            contentDescription = name,
+            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+            modifier = Modifier.size(size).clip(CircleShape),
+        )
+    } else {
+        Box(
+            Modifier.size(size).clip(CircleShape)
+                .background(Brush.linearGradient(listOf(
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.25f)))),
+            contentAlignment = Alignment.Center,
+        ) { Text("👥", fontSize = (size.value * 0.42f).sp) }
     }
 }
 
@@ -763,87 +845,69 @@ private fun CourseManagerSheet(vm: HomeViewModel, courses: List<Course>, onDismi
             }
             Spacer(Modifier.height(12.dp))
             Button(onClick = { vm.addCourse(name.trim(), color, icon) { err -> Toast.makeText(ctx, err ?: "درس اضافه شد ✅", Toast.LENGTH_SHORT).show() }; name = "" },
-                enabled = name.isNotBlank(), modifier = Modifier.fillMaxWidth().height(48.dp), shape = MaterialTheme.shapes.medium) {
-                Icon(Icons.Rounded.Add, null); Spacer(Modifier.width(6.dp)); Text("افزودن درس")
-            }
+                enabled = name.isNotBlank(),
+                modifier = Modifier.fillMaxWidth().height(50.dp), shape = MaterialTheme.shapes.medium) { Text("افزودن درس") }
             Spacer(Modifier.height(14.dp))
-            courses.forEach { c ->
-                Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(10.dp).background(courseColor(c.color), CircleShape))
-                    Spacer(Modifier.width(10.dp)); Text(c.icon, fontSize = 18.sp); Spacer(Modifier.width(8.dp))
-                    Text(c.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                    IconButton(onClick = { vm.deleteCourse(c.id) }) { Icon(Icons.Rounded.Delete, "حذف", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp)) }
+            if (courses.isEmpty()) {
+                Text("هنوز درسی نداری — اولین درس رو اضافه کن", style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+            } else {
+                courses.forEach { c ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(34.dp).clip(CircleShape)
+                            .background(courseColor(c.color).copy(alpha = 0.16f)), contentAlignment = Alignment.Center) {
+                            Text(c.icon, fontSize = 16.sp)
+                        }
+                        Spacer(Modifier.width(10.dp))
+                        Text(c.name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        IconButton(onClick = { vm.deleteCourse(c.id) }) {
+                            Icon(Icons.Rounded.Delete, "حذف درس", tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f))
+                        }
+                    }
                 }
             }
-            if (courses.isEmpty()) EmptyState("🌱", "اولین درست رو بساز")
         }
     }
 }
 
 /* ---------------------------------------------------------------------- */
-/*  جشن استریک                                                            */
+/*  دیالوگ جشن استریک                                                     */
 /* ---------------------------------------------------------------------- */
 
-/*
- * Opens only when the streak chip is tapped.
- *
- * Three layers run together: a slowly rotating sweep halo, twenty four confetti
- * pieces on their own ballistic paths, and a spring scaled card. Everything is
- * driven by two Animatables and one infinite transition, so once the entrance
- * settles nothing else recomposes and the dialog stays cheap to keep on screen.
- */
+/* Confetti + spinning glow + the streak number, all on a gradient card. */
 @Composable
 private fun CelebrationDialog(streak: Int, onDismiss: () -> Unit) {
+    val t = rememberInfiniteTransition(label = "celebrate")
+    val spin by t.animateFloat(0f, 360f, infiniteRepeatable(tween(2600, easing = LinearEasing)), label = "spin")
+    val pulse by t.animateFloat(0.94f, 1.06f,
+        infiniteRepeatable(tween(750, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "pulse")
     val enter = remember { Animatable(0f) }
-    val burst = remember { Animatable(0f) }
-    LaunchedEffect(Unit) {
-        launch { enter.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = 260f)) }
-        burst.animateTo(1f, tween(2200, easing = LinearEasing))
-    }
-
-    val t = rememberInfiniteTransition(label = "cel")
-    val spin by t.animateFloat(
-        0f, 360f,
-        infiniteRepeatable(tween(9000, easing = LinearEasing)), label = "spin",
-    )
-    val pulse by t.animateFloat(
-        1f, 1.2f,
-        infiniteRepeatable(tween(760, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "pulse",
-    )
-
+    LaunchedEffect(Unit) { enter.animateTo(1f, tween(420, easing = EaseOutBack)) }
     val msg = when {
-        streak <= 0 -> "امروز شروع کن تا استریکت بالا بره! 💪"
-        streak < 3 -> "شروع خوبیه! ادامه بده تا عادت بشه 🌱"
-        streak < 7 -> "داری قوی می‌شی! نذار قطع شه 🔥"
-        streak < 30 -> "عالیه! تو یه قهرمان درس‌خونی ⭐"
-        else -> "افسانه‌ای! این استریک فوق‌العادهست 🏆"
+        streak <= 1 -> "شروع یک مسیر تازه!"
+        streak < 7 -> "داری گرم می‌شی — ادامه بده!"
+        streak < 30 -> "حالا دیگه یه عادت واقعیه!"
+        else -> "اسطوره‌ی درس‌خوندن! 🏆"
     }
-
-    val confetti = listOf(
-        Color(0xFF4ADE9F), Color(0xFF38BDF8), Color(0xFFFBBF24),
-        Color(0xFFFB7185), Color(0xFFA78BFA), Color(0xFFFB923C),
-    )
-
+    val random = remember { kotlin.random.Random(streak * 31L) }
+    val confetti = remember { List(26) { Triple(random.nextFloat() * 400f - 200f, random.nextFloat() * 300f - 150f, random.nextFloat() * 6f + 3f) } }
     Dialog(onDismissRequest = onDismiss) {
         Box(contentAlignment = Alignment.Center) {
-
-            Canvas(Modifier.fillMaxWidth().height(430.dp)) {
-                val p = burst.value
-                if (p < 1f) {
-                    val cx = size.width / 2f
-                    val cy = size.height / 2f
-                    val fade = (1f - p).coerceIn(0f, 1f)
-                    repeat(24) { i ->
-                        val rad = ((i * 37.7f) % 360f) * (3.14159265f / 180f)
-                        val speed = 130f + (i % 5) * 46f
-                        val x = cx + cos(rad) * speed * p
-                        val y = cy + sin(rad) * speed * p + 430f * p * p
-                        drawCircle(
-                            color = confetti[i % confetti.size].copy(alpha = fade),
-                            radius = 5f + (i % 3) * 2.5f,
-                            center = Offset(x, y),
-                        )
-                    }
+            Canvas(Modifier.size(340.dp)) {
+                val fade = (1f - (enter.value * 0.4f)).coerceIn(0f, 1f)
+                confetti.forEachIndexed { i, (x, y, r) ->
+                    drawCircle(
+                        color = androidx.compose.ui.graphics.lerp(
+                            MaterialTheme.colorScheme.primary,
+                            MaterialTheme.colorScheme.secondary,
+                            (i % 10) / 10f,
+                        ).copy(alpha = fade),
+                        radius = r,
+                        center = Offset(
+                            size.width / 2 + x * enter.value + sin(i * 1.7f) * 14f,
+                            size.height / 2 + y * enter.value - cos(i * 1.3f) * 12f,
+                        ),
+                    )
                 }
             }
 
@@ -855,7 +919,12 @@ private fun CelebrationDialog(streak: Int, onDismiss: () -> Unit) {
                     scaleX = e
                     scaleY = e
                     alpha = e.coerceIn(0f, 1f)
-                },
+                }
+                    .shadow(
+                        30.dp, MaterialTheme.shapes.extraLarge,
+                        ambientColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f),
+                        spotColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.55f),
+                    ),
             ) {
                 Column(
                     Modifier.background(brandGradient()).padding(28.dp),

@@ -1,5 +1,6 @@
 package ir.darshub.app.ui.auth
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -56,8 +57,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -79,24 +81,27 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ir.darshub.app.core.fa
+import ir.darshub.app.ui.theme.DarsMotion
 import ir.darshub.app.ui.theme.brandGradient
+import ir.darshub.app.ui.theme.pressScale
 
 /*
- * Design system for the entry screens.
+ * Design system for the entry screens — «Aurora» 2026.
  *
- * Rewritten to speak the same visual language as the rest of the app:
- * Material 3 colour scheme, AppShapes corners, Vazir typography, brandGradient
- * accents and the soft layered cards used on Home / Library / Profile.
- * The old neobrutalist sheet (hard black outlines, cream page, offset shadows)
- * was the only screen in the app that looked like that, so it is gone.
+ * Speaks the same visual language as the rest of the app: Material 3 colour
+ * scheme, AppShapes corners, Vazir typography, brandGradient accents and the
+ * soft layered glass cards used on Home / Library / Profile.
  */
 
 /* ---------------- background ---------------- */
 
-/** Page shell: brand tinted gradient plus two blurred colour blobs. */
+/** Page shell: brand tinted gradient, three aurora pools + two floating orbs. */
 @Composable
 fun AuthBackdrop(content: @Composable BoxScope.() -> Unit) {
     val cs = MaterialTheme.colorScheme
+    val t = rememberInfiniteTransition(label = "authOrbs")
+    val f1 by t.animateFloat(-10f, 10f, infiniteRepeatable(tween(3600, easing = FastOutSlowInEasing), RepeatMode.Reverse, startOffset = 200), label = "orbA")
+    val f2 by t.animateFloat(9f, -9f, infiniteRepeatable(tween(4200, easing = FastOutSlowInEasing), RepeatMode.Reverse, startOffset = 900), label = "orbB")
     Box(
         Modifier
             .fillMaxSize()
@@ -111,13 +116,10 @@ fun AuthBackdrop(content: @Composable BoxScope.() -> Unit) {
             )
     ) {
         /*
-         * Two soft light pools.
-         *
-         * These used to be solid circles behind Modifier.blur(90.dp). That
-         * modifier is a no-op below API 31, so on the majority of devices the
-         * blur never happened and the user saw two hard edged blocks pasted on
-         * the screen. The softness now comes from a radial gradient that fades
-         * to fully transparent, which every API level renders identically.
+         * Three soft light pools + two floating glow orbs.
+         * Softness comes from radial gradients that fade to fully transparent,
+         * which every API level renders identically (Modifier.blur is a no-op
+         * below API 31, so it is never used here).
          */
         Box(
             Modifier
@@ -132,9 +134,23 @@ fun AuthBackdrop(content: @Composable BoxScope.() -> Unit) {
         )
         Box(
             Modifier
+                .size(240.dp)
+                .align(Alignment.TopEnd)
+                .offset(x = 70.dp, y = 90.dp)
+                .graphicsLayer { translationY = f1 }
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(cs.tertiary.copy(alpha = 0.14f), Color.Transparent),
+                    ),
+                    CircleShape,
+                )
+        )
+        Box(
+            Modifier
                 .size(280.dp)
                 .align(Alignment.BottomEnd)
                 .offset(x = 110.dp, y = 130.dp)
+                .graphicsLayer { translationY = f2 }
                 .background(
                     Brush.radialGradient(
                         colors = listOf(cs.secondary.copy(alpha = 0.16f), Color.Transparent),
@@ -146,7 +162,7 @@ fun AuthBackdrop(content: @Composable BoxScope.() -> Unit) {
     }
 }
 
-/** Brand mark, same rounded gradient tile as the splash screen. */
+/** Brand mark, same rounded gradient tile as the splash screen, with a glow. */
 @Composable
 fun AuthLogo() {
     val t = rememberInfiniteTransition(label = "logo")
@@ -157,9 +173,14 @@ fun AuthLogo() {
     )
     Box(
         Modifier
-            .size(74.dp)
+            .size(78.dp)
             .graphicsLayer { scaleX = pulse; scaleY = pulse }
-            .clip(RoundedCornerShape(24.dp))
+            .shadow(
+                22.dp, RoundedCornerShape(26.dp),
+                ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
+            )
+            .clip(RoundedCornerShape(26.dp))
             .background(brandGradient()),
         contentAlignment = Alignment.Center,
     ) {
@@ -167,20 +188,29 @@ fun AuthLogo() {
             Icons.Rounded.AutoStories,
             null,
             tint = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.size(36.dp),
+            modifier = Modifier.size(38.dp),
         )
     }
 }
 
-/** The frosted card every step lives inside. */
+/** The frosted glass card every step lives inside. */
 @Composable
 fun AuthCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
-        shadowElevation = 12.dp,
+        color = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.92f),
+        border = BorderStroke(
+            1.dp,
+            Brush.linearGradient(
+                listOf(
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.16f),
+                )
+            ),
+        ),
+        shadowElevation = 0.dp,
     ) {
         Column(Modifier.padding(horizontal = 20.dp, vertical = 22.dp), content = content)
     }
@@ -259,6 +289,11 @@ fun AuthPrimaryButton(
         modifier
             .fillMaxWidth()
             .graphicsLayer { scaleX = scale; scaleY = scale; alpha = if (live) 1f else 0.45f }
+            .shadow(
+                if (live) 14.dp else 0.dp, CircleShape,
+                ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
+            )
             .clip(CircleShape)
             .background(brandGradient())
             .clickable(interaction, indication = null, enabled = live) {
@@ -393,14 +428,14 @@ fun PhoneInput(
 ) {
     val cs = MaterialTheme.colorScheme
     var focused by remember { mutableStateOf(false) }
-    val border by androidx.compose.animation.animateColorAsState(
+    val border by animateColorAsState(
         if (focused) cs.primary else cs.outlineVariant.copy(alpha = 0.7f),
         tween(220), label = "phoneBorder",
     )
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
-        color = cs.surfaceVariant.copy(alpha = 0.42f),
+        color = cs.surfaceContainerLow.copy(alpha = 0.85f),
         border = BorderStroke(if (focused) 2.dp else 1.dp, border),
     ) {
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
@@ -420,13 +455,6 @@ fun PhoneInput(
                         .height(24.dp)
                         .background(cs.outlineVariant)
                 )
-                /*
-                 * Both layers share one text style and one alignment box.
-                 * Before, the hint had no vertical padding while the field had
-                 * 14.dp, so the hint floated above the digits and looked like it
-                 * had escaped the box. maxLines plus softWrap false keeps a long
-                 * hint on one line instead of pushing the row taller.
-                 */
                 val digitStyle = MaterialTheme.typography.titleMedium.copy(
                     textAlign = TextAlign.Start,
                     textDirection = TextDirection.Ltr,
@@ -522,7 +550,7 @@ fun OtpCells(
                         .aspectRatio(0.82f)
                         .graphicsLayer { scaleX = pop; scaleY = pop },
                     shape = MaterialTheme.shapes.medium,
-                    color = if (filled) cs.primary.copy(alpha = 0.10f) else cs.surfaceVariant.copy(alpha = 0.38f),
+                    color = if (filled) cs.primary.copy(alpha = 0.10f) else cs.surfaceContainerLow.copy(alpha = 0.8f),
                     border = BorderStroke(if (active || error) 2.dp else 1.dp, stroke),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -565,7 +593,7 @@ private fun RowScopeKey(
         spring(dampingRatio = 0.42f, stiffness = 1100f),
         label = "keyPress",
     )
-    val bg by androidx.compose.animation.animateColorAsState(
+    val bg by animateColorAsState(
         if (pressed && enabled) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
         else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.40f),
         tween(140), label = "keyBg",

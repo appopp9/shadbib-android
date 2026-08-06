@@ -211,7 +211,7 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().background(ir.darshub.app.ui.theme.auroraBrush()),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {

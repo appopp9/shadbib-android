@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -59,6 +61,8 @@ import ir.darshub.app.player.PlayerHolder
 import ir.darshub.app.ui.auth.AuthScreen
 import ir.darshub.app.ui.nav.MainScaffold
 import ir.darshub.app.ui.theme.DarsHubTheme
+import ir.darshub.app.ui.theme.DarsMotion
+import ir.darshub.app.ui.theme.auroraBrush
 import ir.darshub.app.ui.theme.brandGradient
 import kotlinx.coroutines.delay
 
@@ -87,13 +91,13 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun AppRoot() {
     var splash by remember { mutableStateOf(true) }
-    LaunchedEffect(Unit) { delay(1600); splash = false }
+    LaunchedEffect(Unit) { delay(1700); splash = false }
     Box(Modifier.fillMaxSize()) {
         Root()
         AnimatedVisibility(
             visible = splash,
-            exit = fadeOut(tween(520, easing = FastOutSlowInEasing)) +
-                    scaleOut(tween(520, easing = FastOutSlowInEasing), targetScale = 1.08f),
+            exit = fadeOut(tween(560, easing = FastOutSlowInEasing)) +
+                    scaleOut(tween(560, easing = FastOutSlowInEasing), targetScale = 1.06f),
         ) { AnimatedSplash() }
     }
 }
@@ -109,38 +113,45 @@ private fun Root() {
     }
 }
 
-/** اسپلش برند: لوگوی گرادیانی تپنده، حلقهٔ گرادیانی چرخان، وردمارک و سه نقطهٔ چشمک‌زن. */
+/**
+ * اسپلش ۲۰۲۶ «Aurora»: پس‌زمینهٔ شفق با دو گوی نور شناور، لوگوی
+ * گرادیانی تپنده با هاله، حلقهٔ چرخان، وردمارک و سه نقطهٔ چشمک‌زن.
+ */
 @Composable
 private fun AnimatedSplash() {
     val cs = MaterialTheme.colorScheme
     val t = rememberInfiniteTransition(label = "splash")
     val rot by t.animateFloat(0f, 360f,
-        infiniteRepeatable(tween(2400, easing = LinearEasing)), label = "rot")
+        infiniteRepeatable(tween(2200, easing = LinearEasing)), label = "rot")
     val pulse by t.animateFloat(0.94f, 1.06f,
         infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "pulse")
-    val d1 by t.animateFloat(0.25f, 1f, infiniteRepeatable(tween(550), RepeatMode.Reverse), label = "d1")
-    val d2 by t.animateFloat(0.25f, 1f, infiniteRepeatable(tween(550), RepeatMode.Reverse, StartOffset(180)), label = "d2")
-    val d3 by t.animateFloat(0.25f, 1f, infiniteRepeatable(tween(550), RepeatMode.Reverse, StartOffset(360)), label = "d3")
-    var on by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { on = true }
-    val enter by animateFloatAsState(if (on) 1f else 0f, tween(650, easing = FastOutSlowInEasing), label = "enter")
+    val orb1 by t.animateFloat(-14f, 14f,
+        infiniteRepeatable(tween(3200, easing = FastOutSlowInEasing), RepeatMode.Reverse, StartOffset(300)), label = "orb1")
+    val orb2 by t.animateFloat(12f, -12f,
+        infiniteRepeatable(tween(3800, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "orb2")
+    val d1 by t.animateFloat(0.25f, 1f, infiniteRepeatable(tween(700, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "d1")
+    val d2 by t.animateFloat(0.25f, 1f, infiniteRepeatable(tween(700, easing = FastOutSlowInEasing), RepeatMode.Reverse, StartOffset(230)), label = "d2")
+    val d3 by t.animateFloat(0.25f, 1f, infiniteRepeatable(tween(700, easing = FastOutSlowInEasing), RepeatMode.Reverse, StartOffset(460)), label = "d3")
 
-    Box(
-        Modifier.fillMaxSize().background(
-            Brush.radialGradient(listOf(lerp(cs.background, cs.primary, 0.07f), cs.background))
-        ),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.graphicsLayer {
-                alpha = enter
-                scaleX = 0.9f + 0.1f * enter; scaleY = 0.9f + 0.1f * enter
-            },
-        ) {
+    Box(Modifier.fillMaxSize().background(auroraBrush()), contentAlignment = Alignment.Center) {
+        // گوی‌های نور شناور
+        Box(Modifier.align(Alignment.TopStart).offset(x = 40.dp, y = 90.dp)
+            .graphicsLayer { translationY = orb1 }
+            .size(150.dp)
+            .background(
+                Brush.radialGradient(
+                    listOf(cs.primary.copy(alpha = 0.16f), cs.primary.copy(alpha = 0f)),
+                ), CircleShape))
+        Box(Modifier.align(Alignment.BottomEnd).offset(x = (-50).dp, y = (-80).dp)
+            .graphicsLayer { translationY = orb2 }
+            .size(190.dp)
+            .background(
+                Brush.radialGradient(
+                    listOf(cs.secondary.copy(alpha = 0.14f), cs.secondary.copy(alpha = 0f)),
+                ), CircleShape))
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(contentAlignment = Alignment.Center) {
-                Canvas(Modifier.size(150.dp).graphicsLayer { rotationZ = rot }) {
+                Canvas(Modifier.size(158.dp).graphicsLayer { rotationZ = rot }) {
                     drawArc(
                         color = cs.onSurface.copy(alpha = 0.06f),
                         startAngle = 0f, sweepAngle = 360f, useCenter = false,
@@ -152,16 +163,21 @@ private fun AnimatedSplash() {
                 }
                 Box(
                     Modifier
-                        .size(92.dp)
+                        .size(96.dp)
                         .graphicsLayer { scaleX = pulse; scaleY = pulse }
-                        .clip(RoundedCornerShape(28.dp))
+                        .shadow(
+                            26.dp, RoundedCornerShape(30.dp),
+                            ambientColor = cs.primary.copy(alpha = 0.5f),
+                            spotColor = cs.primary.copy(alpha = 0.6f),
+                        )
+                        .clip(RoundedCornerShape(30.dp))
                         .background(brandGradient()),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Rounded.AutoStories, null, tint = cs.onPrimary, modifier = Modifier.size(46.dp))
+                    Icon(Icons.Rounded.AutoStories, null, tint = cs.onPrimary, modifier = Modifier.size(48.dp))
                 }
             }
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(20.dp))
             Text("درس هاب", style = MaterialTheme.typography.headlineLarge, color = cs.onBackground)
             Text("مطالعه، با هم قشنگ‌تره", style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
             Spacer(Modifier.height(22.dp))

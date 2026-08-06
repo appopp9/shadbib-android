@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -20,8 +21,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import ir.darshub.app.R
 
-// ---------- پالت برند «شب مطالعه» ----------
-val Mint = Color(0xFF4ADE9F)
+// ==================== DarsHub 2026 — «Aurora Study» ====================
+// هویت جدید: شبِ عمیقِ بنفش-آبی با شفق‌های گرادیانی در تم تیره،
+// و کاغذِ گرمِ عاجی با رگه‌های شفق در تم روشن. سطوح چندلایه، شیشه و عمق نرم.
+
+// ---------- رنگ‌های برند (ثابت، برای سازگاری) ----------
+val Mint = Color(0xFF34E0A1)
 val MintDeep = Color(0xFF10B981)
 val MintDark = Color(0xFF059669)
 val Cyan = Color(0xFF38BDF8)
@@ -41,7 +46,7 @@ fun courseColor(key: String): Color = when (key) {
     else -> CoursePurple
 }
 
-// ==================== تم‌های رنگی (سبک تلگرام) ====================
+// ==================== پالت‌ها ====================
 /** هر پالت با ۴ رنگ اصلی تعریف می‌شود؛ بقیه رنگ‌ها به‌صورت خودکار مشتق می‌شوند. */
 data class AppPalette(
     val id: String,
@@ -56,69 +61,101 @@ data class AppPalette(
 )
 
 val AppPalettes = listOf(
-    AppPalette("mint", "نعنایی", "🌿", Mint, MintDark, Cyan, Color(0xFF0284C7)),
-    AppPalette("ocean", "اقیانوس", "🌊", Color(0xFF38BDF8), Color(0xFF0369A1), Mint, MintDark),
-    AppPalette("grape", "انگوری", "🍇", Color(0xFFA78BFA), Color(0xFF7C3AED), Color(0xFFF472B6), Color(0xFFDB2777)),
-    AppPalette("sunset", "غروب", "🌅", Color(0xFFFB923C), Color(0xFFEA580C), Color(0xFFFBBF24), Color(0xFFB45309), tDark = Color(0xFFF472B6), tLight = Color(0xFFDB2777)),
-    AppPalette("rose", "شکوفه", "🌸", Color(0xFFFB7185), Color(0xFFE11D48), Color(0xFFA78BFA), Color(0xFF7C3AED)),
-    AppPalette("gold", "طلایی", "✨", Color(0xFFFBBF24), Color(0xFFB45309), Color(0xFF38BDF8), Color(0xFF0369A1), tDark = Mint, tLight = MintDark),
+    AppPalette("mint", "نعنایی", "🌿", Color(0xFF34E0A1), Color(0xFF0E9F6E), Cyan, Color(0xFF0284C7)),
+    AppPalette("ocean", "اقیانوس", "🌊", Color(0xFF4CC3F7), Color(0xFF0369A1), Color(0xFF34E0A1), Color(0xFF0E9F6E)),
+    AppPalette("grape", "انگوری", "🍇", Color(0xFFB49BFF), Color(0xFF7C3AED), Color(0xFFF472B6), Color(0xFFDB2777)),
+    AppPalette("sunset", "غروب", "🌅", Color(0xFFFFA05C), Color(0xFFEA580C), Color(0xFFFFD24D), Color(0xFFB45309), tDark = Color(0xFFF472B6), tLight = Color(0xFFDB2777)),
+    AppPalette("rose", "شکوفه", "🌸", Color(0xFFFF7D92), Color(0xFFE11D48), Color(0xFFB49BFF), Color(0xFF7C3AED)),
+    AppPalette("gold", "طلایی", "✨", Color(0xFFFFD24D), Color(0xFFB45309), Color(0xFF4CC3F7), Color(0xFF0369A1), tDark = Mint, tLight = MintDark),
 )
 
 fun paletteOf(id: String): AppPalette = AppPalettes.firstOrNull { it.id == id } ?: AppPalettes.first()
 
-/** تم تیرهٔ عمیق «شب مطالعه» — پس‌زمینه سبزفام نزدیک به سیاه با کارت‌های لایه‌ای. */
+// ---------- سطوح مشتق‌شده از تم ----------
+private val LightPaper = Color(0xFFF6F6F1)
+private val LightInk = Color(0xFF191C21)
+private val DarkMidnight = Color(0xFF070A0F)
+private val DarkCloud = Color(0xFFE9EDF2)
+
+/** تم تیرهٔ «نیمه‌شب شفق» — سرمه‌ای عمیق با سطوح چندلایهٔ شیشه‌ای. */
 fun darkSchemeOf(p: AppPalette): ColorScheme {
-    val nBg = Color(0xFF0B100E); val nSurf = Color(0xFF131A16); val nVar = Color(0xFF1A2420)
+    val bg = lerp(DarkMidnight, p.pDark, 0.045f)
+    val surf = lerp(Color(0xFF0E1218), p.pDark, 0.035f)
+    val v1 = lerp(Color(0xFF10151C), p.pDark, 0.05f)
+    val v2 = lerp(Color(0xFF141A23), p.pDark, 0.06f)
+    val v3 = lerp(Color(0xFF1A212C), p.pDark, 0.07f)
+    val v4 = lerp(Color(0xFF212A37), p.pDark, 0.08f)
     return darkColorScheme(
-        primary = p.pDark,
-        onPrimary = lerp(Color(0xFF06110C), p.pDark, 0.10f),
-        primaryContainer = lerp(nSurf, p.pDark, 0.24f),
-        onPrimaryContainer = lerp(Color.White, p.pDark, 0.30f),
-        secondary = p.sDark,
-        onSecondary = lerp(Color(0xFF06110C), p.sDark, 0.10f),
-        secondaryContainer = lerp(nSurf, p.sDark, 0.22f),
-        onSecondaryContainer = lerp(Color.White, p.sDark, 0.30f),
-        tertiary = p.tDark,
-        onTertiary = lerp(Color(0xFF06110C), p.tDark, 0.10f),
-        tertiaryContainer = lerp(nSurf, p.tDark, 0.22f),
-        onTertiaryContainer = lerp(Color.White, p.tDark, 0.30f),
-        background = lerp(nBg, p.pDark, 0.035f),
-        onBackground = lerp(Color(0xFFECF4EF), p.pDark, 0.04f),
-        surface = lerp(nSurf, p.pDark, 0.045f),
-        onSurface = lerp(Color(0xFFECF4EF), p.pDark, 0.04f),
-        surfaceVariant = lerp(nVar, p.pDark, 0.08f),
-        onSurfaceVariant = lerp(Color(0xFF8FA39A), p.pDark, 0.10f),
-        outline = lerp(Color(0xFF3A4742), p.pDark, 0.15f),
-        outlineVariant = lerp(Color(0xFF232E29), p.pDark, 0.12f),
-        error = Rose,
-        onError = Color(0xFF4C0519),
+        primary = lerp(p.pDark, Color.White, 0.06f),
+        onPrimary = lerp(Color(0xFF050A08), p.pDark, 0.12f),
+        primaryContainer = lerp(surf, p.pDark, 0.26f),
+        onPrimaryContainer = lerp(Color.White, p.pDark, 0.34f),
+        secondary = lerp(p.sDark, Color.White, 0.05f),
+        onSecondary = lerp(Color(0xFF050A08), p.sDark, 0.12f),
+        secondaryContainer = lerp(surf, p.sDark, 0.24f),
+        onSecondaryContainer = lerp(Color.White, p.sDark, 0.34f),
+        tertiary = lerp(p.tDark, Color.White, 0.05f),
+        onTertiary = lerp(Color(0xFF050A08), p.tDark, 0.12f),
+        tertiaryContainer = lerp(surf, p.tDark, 0.24f),
+        onTertiaryContainer = lerp(Color.White, p.tDark, 0.34f),
+        background = bg,
+        onBackground = lerp(DarkCloud, p.pDark, 0.05f),
+        surface = surf,
+        onSurface = lerp(DarkCloud, p.pDark, 0.05f),
+        surfaceTint = p.pDark,
+        surfaceContainerLowest = lerp(Color(0xFF05070B), p.pDark, 0.03f),
+        surfaceContainerLow = v1,
+        surfaceContainer = v2,
+        surfaceContainerHigh = v3,
+        surfaceContainerHighest = v4,
+        surfaceVariant = lerp(Color(0xFF1B232E), p.pDark, 0.09f),
+        onSurfaceVariant = lerp(Color(0xFFA6B0BC), p.pDark, 0.10f),
+        outline = lerp(Color(0xFF3C4754), p.pDark, 0.15f),
+        outlineVariant = lerp(Color(0xFF242C37), p.pDark, 0.12f),
+        error = Color(0xFFFF7A93),
+        onError = Color(0xFF3B0713),
+        inverseSurface = lerp(DarkCloud, p.pDark, 0.05f),
+        inverseOnSurface = Color(0xFF11151B),
+        inversePrimary = lerp(p.pLight, Color.Black, 0.12f),
+        scrim = Color(0xFF000000),
     )
 }
 
+/** تم روشنِ «کاغذ شفق» — عاجی گرم با سطوح کاغذی و رگه‌های رنگی ظریف. */
 fun lightSchemeOf(p: AppPalette): ColorScheme {
     return lightColorScheme(
         primary = p.pLight,
         onPrimary = Color.White,
-        primaryContainer = lerp(Color.White, p.pLight, 0.14f),
+        primaryContainer = lerp(Color.White, p.pLight, 0.13f),
         onPrimaryContainer = lerp(p.pLight, Color.Black, 0.42f),
         secondary = p.sLight,
         onSecondary = Color.White,
-        secondaryContainer = lerp(Color.White, p.sLight, 0.13f),
+        secondaryContainer = lerp(Color.White, p.sLight, 0.12f),
         onSecondaryContainer = lerp(p.sLight, Color.Black, 0.42f),
         tertiary = p.tLight,
         onTertiary = Color.White,
-        tertiaryContainer = lerp(Color.White, p.tLight, 0.15f),
+        tertiaryContainer = lerp(Color.White, p.tLight, 0.14f),
         onTertiaryContainer = lerp(p.tLight, Color.Black, 0.42f),
-        background = lerp(Color(0xFFF7FAF8), p.pLight, 0.03f),
-        onBackground = Color(0xFF14201B),
+        background = lerp(LightPaper, p.pLight, 0.025f),
+        onBackground = LightInk,
         surface = Color.White,
-        onSurface = Color(0xFF14201B),
-        surfaceVariant = lerp(Color(0xFFECF2EF), p.pLight, 0.06f),
-        onSurfaceVariant = lerp(Color(0xFF46564F), p.pLight, 0.12f),
-        outline = lerp(Color(0xFFC2CEC9), p.pLight, 0.16f),
-        outlineVariant = lerp(Color(0xFFDCE6E1), p.pLight, 0.12f),
+        onSurface = LightInk,
+        surfaceTint = p.pLight,
+        surfaceContainerLowest = Color.White,
+        surfaceContainerLow = lerp(Color(0xFFF2F2EC), p.pLight, 0.02f),
+        surfaceContainer = lerp(Color(0xFFECECE5), p.pLight, 0.03f),
+        surfaceContainerHigh = lerp(Color(0xFFE5E5DD), p.pLight, 0.04f),
+        surfaceContainerHighest = lerp(Color(0xFFDFDFD6), p.pLight, 0.05f),
+        surfaceVariant = lerp(Color(0xFFECECE5), p.pLight, 0.05f),
+        onSurfaceVariant = lerp(Color(0xFF4B5056), p.pLight, 0.10f),
+        outline = lerp(Color(0xFFC4C7C2), p.pLight, 0.14f),
+        outlineVariant = lerp(Color(0xFFE3E4DD), p.pLight, 0.10f),
         error = Color(0xFFE11D48),
         onError = Color.White,
+        inverseSurface = lerp(LightInk, p.pLight, 0.06f),
+        inverseOnSurface = Color(0xFFF2F2ED),
+        inversePrimary = lerp(p.pLight, Color.White, 0.18f),
+        scrim = Color(0xFF000000),
     )
 }
 
@@ -140,6 +177,23 @@ fun brandGradient(): Brush {
 
 /** برای سازگاری با کدهای قدیمی (گرادیان پیش‌فرض نعنایی). */
 val BrandGradient = Brush.linearGradient(listOf(MintDeep, Mint, Cyan))
+
+/** پس‌زمینهٔ شفق: گرادیان‌های رادیال محو برند روی سطح — امضای «Aurora Study». */
+@Composable
+fun auroraBrush(dark: Boolean = MaterialTheme.colorScheme.background.luminance() < 0.5f): Brush {
+    val cs = MaterialTheme.colorScheme
+    return remember(cs.primary, cs.secondary, cs.background, dark) {
+        Brush.radialGradient(
+            colors = listOf(
+                cs.primary.copy(alpha = if (dark) 0.15f else 0.09f),
+                cs.secondary.copy(alpha = if (dark) 0.07f else 0.045f),
+                cs.background,
+            ),
+            center = androidx.compose.ui.geometry.Offset(-0.35f, -0.5f),
+            radius = 950f,
+        )
+    }
+}
 
 val Vazir = FontFamily(
     Font(R.font.vazirmatn_regular, FontWeight.Normal),
@@ -171,13 +225,13 @@ val AppTypography = Typography(
     labelSmall = base.labelSmall.vazir(FontWeight.Medium),
 )
 
-/** گوشه‌های نرم‌تر و بزرگ‌تر — امضای بصری بازطراحی. */
+/** گوشه‌های نرم و بزرگ — امضای بصری ۲۰۲۶ (قرص‌گونه‌تر از قبل). */
 val AppShapes = Shapes(
-    extraSmall = RoundedCornerShape(12.dp),
-    small = RoundedCornerShape(16.dp),
-    medium = RoundedCornerShape(22.dp),
-    large = RoundedCornerShape(28.dp),
-    extraLarge = RoundedCornerShape(34.dp),
+    extraSmall = RoundedCornerShape(14.dp),
+    small = RoundedCornerShape(18.dp),
+    medium = RoundedCornerShape(24.dp),
+    large = RoundedCornerShape(30.dp),
+    extraLarge = RoundedCornerShape(38.dp),
 )
 
 @Composable

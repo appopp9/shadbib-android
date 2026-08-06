@@ -424,7 +424,7 @@ fun GroupChatScreen(id: Int, name: String, onBack: () -> Unit, vm: GroupsViewMod
             Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.95f)), contentAlignment = Alignment.Center) {
                 AsyncImage(model = Api.mediaUrl(viewImage), contentDescription = null, contentScale = androidx.compose.ui.layout.ContentScale.Fit, modifier = Modifier.fillMaxWidth())
                 IconButton(onClick = { viewImage = null }, modifier = Modifier.align(Alignment.TopStart).padding(12.dp)) { Icon(Icons.Rounded.Close, "بستن", tint = androidx.compose.ui.graphics.Color.White) }
-                IconButton(onClick = { ChatMedia.download(ctx, Api.mediaUrl(viewImage), "shadbib_" + System.currentTimeMillis() + ".jpg") }, modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)) { Icon(androidx.compose.material.icons.Icons.Rounded.Download, "دانلود", tint = androidx.compose.ui.graphics.Color.White) }
+                IconButton(onClick = { ChatMedia.download(ctx, Api.mediaUrl(viewImage), "darshub_" + System.currentTimeMillis() + ".jpg") }, modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)) { Icon(androidx.compose.material.icons.Icons.Rounded.Download, "دانلود", tint = androidx.compose.ui.graphics.Color.White) }
             }
         }
     }
@@ -445,7 +445,7 @@ private fun GroupBubble(m: GroupMessage, isMine: Boolean, onLongPress: () -> Uni
                 Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 3.dp)) {
                     Column(Modifier.padding(horizontal = 8.dp, vertical = 5.dp)) {
                         Text(m.replySender ?: "", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                        Text(m.replyMessage?.ifBlank { "📎 رسانه" } ?: "📎 رسانه", style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(m.replyMessage?.ifBlank { "📎 رسانه" } ?: "📎 رسا��ه", style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

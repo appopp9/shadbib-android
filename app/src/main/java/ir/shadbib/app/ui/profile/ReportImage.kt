@@ -36,7 +36,7 @@ object ReportImage {
     ): String? { // null = موفق، در غیر این صورت پیام خطا
         return try {
             val bmp = render(ctx, username, r, primary, secondary, dark)
-            val name = "shadbib_report_" + System.currentTimeMillis() + ".png"
+            val name = "darshub_report_" + System.currentTimeMillis() + ".png"
             if (Build.VERSION.SDK_INT >= 29) {
                 val values = ContentValues().apply {
                     put(MediaStore.Images.Media.DISPLAY_NAME, name)
@@ -98,7 +98,7 @@ object ReportImage {
 
         val cx = w / 2f
         var y = 150f
-        cv.drawText("شادبیب 📚", cx, y, paint(64f, 0xFFFFFFFF.toInt(), black)); y += 92f
+        cv.drawText("درس هاب 📚", cx, y, paint(64f, 0xFFFFFFFF.toInt(), black)); y += 92f
         cv.drawText(username, cx, y, paint(52f, 0xFFFFFFFF.toInt(), bold)); y += 66f
         cv.drawText(Fmt.todayFull(), cx, y, paint(36f, 0xDDFFFFFF.toInt(), regular)); y += 96f
         cv.drawText("📖 ${Fmt.minutes(r.totalMinutes)}   |   🔥 ${r.streak.fa()} روز استریک", cx, y, paint(42f, 0xFFFFFFFF.toInt(), bold))
@@ -107,7 +107,7 @@ object ReportImage {
         y = headerH + 90f
         val chips = buildList {
             add("⏰ بیداری: " + (r.wakeupTime?.let { Fmt.hm(it) } ?: "—"))
-            add("🌅 اولین: " + (r.firstStudy?.let { Fmt.hm(it) } ?: "—"))
+            add("🌅 اولی��: " + (r.firstStudy?.let { Fmt.hm(it) } ?: "—"))
             add("🌙 آخرین: " + (r.lastStudy?.let { Fmt.hm(it) } ?: "—"))
         }
         val chipPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = cardBg }
@@ -144,7 +144,7 @@ object ReportImage {
             y += 20f
         }
 
-        cv.drawText("ساخته‌شده با اپلیکیشن شادبیب 🌿", cx, h - 56f, paint(30f, sub, regular))
+        cv.drawText("ساخته‌شده با اپلیکیشن درس هاب 🌿", cx, h - 56f, paint(30f, sub, regular))
         return bmp
     }
 

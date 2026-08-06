@@ -14,6 +14,9 @@ object NavBus {
     private val _openRoom = MutableStateFlow(false)
     val openRoom: StateFlow<Boolean> get() = _openRoom
 
+    private val _roomSheet = MutableStateFlow<String?>(null)
+    val roomSheet: StateFlow<String?> get() = _roomSheet
+
     private val _openUser = MutableStateFlow<String?>(null)
     val openUser: StateFlow<String?> get() = _openUser
 
@@ -37,7 +40,16 @@ object NavBus {
     fun requestStudy() { _openStudy.value = true }
     fun consumeStudy() { _openStudy.value = false }
 
-    fun requestRoom() { _openRoom.value = true }
+    /**
+     * Open the study room. [sheet] optionally names an overlay the room
+     * should present as soon as it is on screen, e.g. "top" for the full
+     * leaderboard opened from the Home card.
+     */
+    fun requestRoom(sheet: String? = null) {
+        _roomSheet.value = sheet
+        _openRoom.value = true
+    }
+    fun consumeRoomSheet() { _roomSheet.value = null }
     fun consumeRoom() { _openRoom.value = false }
 
     fun requestUser(username: String) { _openUser.value = username }

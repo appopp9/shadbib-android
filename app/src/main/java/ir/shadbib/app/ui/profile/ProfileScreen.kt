@@ -356,7 +356,7 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
         }
         item {
             Text(
-                "شادبیب · نسخه ۱.۶.۰ · بازطراحی «شب مطالعه» 🌙",
+                "درس هاب · نسخه ۱.۶.۰ · بازطراحی «شب مطالعه» 🌙",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier.fillMaxWidth(),

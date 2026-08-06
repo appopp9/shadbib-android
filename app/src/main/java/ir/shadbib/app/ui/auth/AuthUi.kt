@@ -56,7 +56,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -111,20 +110,37 @@ fun AuthBackdrop(content: @Composable BoxScope.() -> Unit) {
                 )
             )
     ) {
+        /*
+         * Two soft light pools.
+         *
+         * These used to be solid circles behind Modifier.blur(90.dp). That
+         * modifier is a no-op below API 31, so on the majority of devices the
+         * blur never happened and the user saw two hard edged blocks pasted on
+         * the screen. The softness now comes from a radial gradient that fades
+         * to fully transparent, which every API level renders identically.
+         */
         Box(
             Modifier
-                .size(260.dp)
-                .offset(x = (-70).dp, y = (-90).dp)
-                .blur(90.dp)
-                .background(cs.primary.copy(alpha = 0.20f), CircleShape)
+                .size(320.dp)
+                .offset(x = (-110).dp, y = (-140).dp)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(cs.primary.copy(alpha = 0.20f), Color.Transparent),
+                    ),
+                    CircleShape,
+                )
         )
         Box(
             Modifier
-                .size(220.dp)
+                .size(280.dp)
                 .align(Alignment.BottomEnd)
-                .offset(x = 70.dp, y = 80.dp)
-                .blur(90.dp)
-                .background(cs.secondary.copy(alpha = 0.16f), CircleShape)
+                .offset(x = 110.dp, y = 130.dp)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(cs.secondary.copy(alpha = 0.16f), Color.Transparent),
+                    ),
+                    CircleShape,
+                )
         )
         content()
     }

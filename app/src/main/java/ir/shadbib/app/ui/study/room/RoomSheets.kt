@@ -234,6 +234,51 @@ private fun medal(rank: Int): String = when (rank) {
 // ==================== \u0627\u0646\u062a\u062e\u0627\u0628 \u062f\u0631\u0633 \u067e\u06cc\u0634 \u0627\u0632 \u062b\u0628\u062a ====================
 
 /** Asks which course the minutes belong to BEFORE logging them. */
+/**
+ * Daily goal picker.
+ *
+ * The ring at the top of the room used to change the goal on every tap with no
+ * label and no confirmation, so the number under it looked random. Tapping now
+ * opens this sheet, which says what the number means and lets the goal be
+ * chosen deliberately.
+ */
+@Composable
+fun GoalSheet(current: Int, done: Int, onPick: (Int) -> Unit, onDismiss: () -> Unit) {
+    RoomSheet("هدف روزانهٔ مطالعه", onDismiss) {
+        Text(
+            "امروز " + done.fa() + " دقیقه خوانده‌ای.",
+            color = Ink, fontSize = 13.sp, fontWeight = FontWeight.Bold,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "حلقهٔ بالای صفحه درصد رسیدن به همین هدف را نشان می‌دهد.",
+            color = Ink, fontSize = 11.sp,
+        )
+        Spacer(Modifier.height(14.dp))
+        RoomPrefs.goalChoices.forEach { g ->
+            val selected = g == current
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = if (selected) Mint else Color.White,
+                border = BorderStroke(2.dp, Ink),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+                    .clickable { onPick(g) },
+            ) {
+                Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        g.fa() + " دقیقه",
+                        color = Ink, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (selected) Icon(Icons.Rounded.Check, null, tint = Ink, modifier = Modifier.size(18.dp))
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun CoursePickerSheet(minutes: Int, onPick: (Int?) -> Unit, onDismiss: () -> Unit) {
     var courses by remember { mutableStateOf<List<Course>>(emptyList()) }

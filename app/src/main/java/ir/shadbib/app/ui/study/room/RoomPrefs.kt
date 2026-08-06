@@ -117,6 +117,12 @@ object RoomPrefs {
         persistActive(m)
     }
 
+    /** Set the daily goal directly, from the goal sheet. */
+    fun setGoal(minutes: Int) {
+        _goal.value = minutes
+        prefs?.edit()?.putInt(K_GOAL, minutes)?.apply()
+    }
+
     fun cycleGoal() {
         val i = goalChoices.indexOf(_goal.value)
         val next = goalChoices[if (i < 0) 0 else (i + 1) % goalChoices.size]

@@ -156,7 +156,7 @@ object ChatMedia {
         if (url.isNullOrBlank()) return
         runCatching {
             val dm = ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            val safeName = (name ?: url.substringAfterLast('/')).ifBlank { "shadbib_" + System.currentTimeMillis() }
+            val safeName = (name ?: url.substringAfterLast('/')).ifBlank { "darshub_" + System.currentTimeMillis() }
             val req = DownloadManager.Request(Uri.parse(url))
                 .setTitle(safeName)
                 .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
@@ -384,7 +384,7 @@ fun AttachSheet(onImage: () -> Unit, onFile: () -> Unit, onMusic: () -> Unit, on
                     Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), onClick = { onMusic() }, modifier = Modifier.fillMaxWidth()) {
                         Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Rounded.MusicNote, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                            Spacer(Modifier.width(10.dp)); Text("از کتابخانه شادبیب", style = MaterialTheme.typography.bodyMedium)
+                            Spacer(Modifier.width(10.dp)); Text("از کتابخانه درس هاب", style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                     Spacer(Modifier.height(8.dp))

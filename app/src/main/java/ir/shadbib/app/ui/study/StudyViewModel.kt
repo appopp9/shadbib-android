@@ -30,6 +30,12 @@ class StudyViewModel : ViewModel() {
         viewModelScope.launch {
             Pomodoro.workCompleted.collect { minutes -> _pendingMinutes.value += minutes }
         }
+        // A course created anywhere in the app must be selectable here at once.
+        viewModelScope.launch {
+            ir.shadbib.app.core.RefreshBus.events.collect { tag ->
+                if (tag == "courses" || tag == "study" || tag == "all") loadCourses()
+            }
+        }
     }
 
     fun loadCourses() {

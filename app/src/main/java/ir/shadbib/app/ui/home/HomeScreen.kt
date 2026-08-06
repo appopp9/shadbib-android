@@ -178,31 +178,65 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
         // Study space launcher — کارت قهرمان با هالهٔ نور و دکمهٔ قرصی
         item {
             ir.shadbib.app.ui.components.FadeSlideIn(1) {
+            /*
+             * Hero card, landscape instead of portrait.
+             *
+             * The old version stacked emoji, title, subtitle and two full width
+             * pills in a centre aligned column, so it ate roughly a third of the
+             * first screen and left both flanks empty. Everything now sits on one
+             * row: today's total in a badge on one side, text and two side by side
+             * actions on the other. Same information, a bit under half the height,
+             * and the full width is actually used.
+             */
             Surface(shape = MaterialTheme.shapes.extraLarge, color = Color.Transparent, onClick = { NavBus.requestStudy() }) {
-                Column(Modifier.background(brandGradient()).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Row(
+                    Modifier.background(brandGradient()).padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     val tGlow = rememberInfiniteTransition(label = "heroGlow")
-                    val gs by tGlow.animateFloat(1f, 1.1f, infiniteRepeatable(tween(1600), RepeatMode.Reverse), label = "gs")
-                    Text("🌌", fontSize = 40.sp, modifier = Modifier.scale(gs))
-                    Spacer(Modifier.height(6.dp))
-                    Text("فضای مطالعه", color = Color.White, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
-                    Text("کرنومتر · پومودورو · صدای محیط · موسیقی", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodySmall)
-                    Spacer(Modifier.height(14.dp))
-                    Surface(shape = CircleShape, color = Color.White) {
-                        Text("شروع مطالعه ▶", color = Color(0xFF06231A), style = MaterialTheme.typography.titleSmall,
-                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 11.dp))
-                    }
-                    Spacer(Modifier.height(9.dp))
-                    Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.20f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.45f)),
-                        onClick = { NavBus.requestRoom() }) {
-                        Row(Modifier.padding(horizontal = 18.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("🐬", fontSize = 15.sp)
-                            Spacer(Modifier.width(6.dp))
-                            Text("با بقیه درس بخون", color = Color.White, style = MaterialTheme.typography.titleSmall)
+                    val gs by tGlow.animateFloat(1f, 1.06f, infiniteRepeatable(tween(1900), RepeatMode.Reverse), label = "gs")
+                    Box(
+                        Modifier
+                            .size(74.dp)
+                            .scale(gs)
+                            .background(Color.White.copy(alpha = 0.18f), CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("امروز", color = Color.White.copy(alpha = 0.8f), fontSize = 10.sp)
+                            Text(state.today.totalMinutes.fa(), color = Color.White, fontWeight = FontWeight.Black, fontSize = 22.sp, maxLines = 1)
+                            Text("دقیقه", color = Color.White.copy(alpha = 0.8f), fontSize = 10.sp)
                         }
                     }
-                    Spacer(Modifier.height(10.dp))
-                    Text("امروز: ${Fmt.minutes(state.today.totalMinutes)}", color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.labelLarge)
+                    Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("فضای مطالعه", color = Color.White, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
+                        Text(
+                            "کرنومتر · پومودورو · صدای محیط",
+                            color = Color.White.copy(alpha = 0.85f),
+                            style = MaterialTheme.typography.labelMedium,
+                            maxLines = 1,
+                        )
+                        Spacer(Modifier.height(11.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Surface(shape = CircleShape, color = Color.White, onClick = { NavBus.requestStudy() }) {
+                                Text("شروع ▶", color = Color(0xFF06231A), style = MaterialTheme.typography.titleSmall,
+                                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 9.dp))
+                            }
+                            Surface(
+                                shape = CircleShape,
+                                color = Color.White.copy(alpha = 0.20f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.45f)),
+                                onClick = { NavBus.requestRoom() },
+                            ) {
+                                Row(Modifier.padding(horizontal = 14.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text("🐬", fontSize = 14.sp)
+                                    Spacer(Modifier.width(5.dp))
+                                    Text("با بقیه", color = Color.White, style = MaterialTheme.typography.titleSmall)
+                                }
+                            }
+                        }
+                    }
                 }
             }
             }
@@ -223,7 +257,13 @@ fun HomeScreen(vm: HomeViewModel = viewModel()) {
         }
 
         // Daily leaderboard
-        item { TopStudiersCard(onUser = { u -> NavBus.requestUser(u) }, onSeeAll = { NavBus.requestRoom() }) }
+        item {
+            TopStudiersCard(
+                myMinutes = state.today.totalMinutes,
+                onUser = { u -> NavBus.requestUser(u) },
+                onSeeAll = { NavBus.requestRoom("top") },
+            )
+        }
 
         // Announcement channel
 

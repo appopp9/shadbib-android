@@ -67,7 +67,7 @@ object Notifications {
     fun notifyMessage(context: Context, count: Int) {
         ensureChannels(context)
         val text = if (count > 1) "$count پیام جدید داری" else "یک پیام جدید داری"
-        post(context, 1001, CH_MESSAGES, "شادبیب", text)
+        post(context, 1001, CH_MESSAGES, "درس هاب", text)
     }
 
     fun notifyReminder(context: Context) {

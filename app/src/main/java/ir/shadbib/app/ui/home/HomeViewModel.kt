@@ -181,6 +181,8 @@ class HomeViewModel : ViewModel() {
                 Api.post("courses", JSONObject().put("name", name).put("color", color).put("icon", icon))
                 onResult(null)
                 refreshCourses()
+                // every other screen holding a course list reloads now
+                ir.shadbib.app.core.RefreshBus.emit("courses")
             } catch (e: Exception) {
                 onResult(e.message ?: "خطا")
             }
@@ -191,6 +193,7 @@ class HomeViewModel : ViewModel() {
         viewModelScope.launch {
             runCatching { Api.delete("courses", "id" to id.toString()) }
             refreshCourses()
+            ir.shadbib.app.core.RefreshBus.emit("courses")
         }
     }
 

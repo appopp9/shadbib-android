@@ -58,7 +58,7 @@ import ir.shadbib.app.core.Store
 import ir.shadbib.app.player.PlayerHolder
 import ir.shadbib.app.ui.auth.AuthScreen
 import ir.shadbib.app.ui.nav.MainScaffold
-import ir.shadbib.app.ui.theme.ShadBibTheme
+import ir.shadbib.app.ui.theme.DarsHubTheme
 import ir.shadbib.app.ui.theme.brandGradient
 import kotlinx.coroutines.delay
 
@@ -75,7 +75,7 @@ class MainActivity : ComponentActivity() {
                 else -> isSystemInDarkTheme()
             }
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                ShadBibTheme(darkTheme = dark, colorId = prefs.themeColor) {
+                DarsHubTheme(darkTheme = dark, colorId = prefs.themeColor) {
                     AppRoot()
                 }
             }
@@ -162,7 +162,7 @@ private fun AnimatedSplash() {
                 }
             }
             Spacer(Modifier.height(18.dp))
-            Text("شادبیب", style = MaterialTheme.typography.headlineLarge, color = cs.onBackground)
+            Text("درس هاب", style = MaterialTheme.typography.headlineLarge, color = cs.onBackground)
             Text("مطالعه، با هم قشنگ‌تره", style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
             Spacer(Modifier.height(22.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {

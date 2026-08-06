@@ -181,7 +181,7 @@ val AppShapes = Shapes(
 )
 
 @Composable
-fun ShadBibTheme(darkTheme: Boolean = isSystemInDarkTheme(), colorId: String = "mint", content: @Composable () -> Unit) {
+fun DarsHubTheme(darkTheme: Boolean = isSystemInDarkTheme(), colorId: String = "mint", content: @Composable () -> Unit) {
     val palette = paletteOf(colorId)
     val scheme = remember(colorId, darkTheme) { if (darkTheme) darkSchemeOf(palette) else lightSchemeOf(palette) }
     MaterialTheme(

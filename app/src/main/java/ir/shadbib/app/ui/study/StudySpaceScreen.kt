@@ -4,6 +4,29 @@ package ir.shadbib.app.ui.study
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import kotlin.math.cos
+import kotlin.math.sin
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -188,44 +211,56 @@ private fun StudySpaceContent(onClose: () -> Unit, vm: StudyViewModel) {
 
 @Composable
 private fun ChronoPanel(hasCourse: Boolean, onLog: (Int) -> Unit) {
-    val ctx = LocalContext.current
     var elapsed by remember { mutableLongStateOf(0L) }
     var running by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { while (true) { elapsed = Chrono.elapsedMs(); running = Chrono.running; delay(400) } }
     val sec = elapsed / 1000
+    val minutes = (sec / 60).toInt()
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        // رینگ گرادیانی دور تایمر (مطابق ماکاپ) — هر دقیقه یک دور کامل
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(250.dp)) {
-            val frac = (sec % 60) / 60f
-            androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
-                val stroke = 16.dp.toPx(); val d = size.minDimension - stroke
-                val tl = Offset((size.width - d) / 2, (size.height - d) / 2)
-                drawArc(Color.White.copy(alpha = 0.08f), -90f, 360f, false, tl, Size(d, d), style = Stroke(stroke, cap = StrokeCap.Round))
-                if (sec > 0) drawArc(
-                    Brush.linearGradient(listOf(FocusMint, FocusCyan)),
-                    -90f, 360f * (if (running) frac.coerceAtLeast(0.01f) else frac), false, tl, Size(d, d),
-                    style = Stroke(stroke, cap = StrokeCap.Round))
-            }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(clockHms(sec), color = Color.White, fontWeight = FontWeight.Black, fontSize = 46.sp)
-                Text(if (running) "در حال مطالعه…" else if (sec > 0) "متوقف شده" else "آماده شروع",
-                    color = Color.White.copy(alpha = 0.75f), style = MaterialTheme.typography.bodySmall)
+        TimerRing(progress = (sec % 60) / 60f, running = running, ringA = FocusMint, ringB = FocusCyan) {
+            Text(clockHms(sec), color = Color.White, fontWeight = FontWeight.Black, fontSize = 44.sp, maxLines = 1)
+            Spacer(Modifier.height(2.dp))
+            Text(
+                if (running) "در حال مطالعه…"
+                else if (sec > 0) "متوقف شده"
+                else "آمادهٔ شروع",
+                color = if (running) FocusMint else Color.White.copy(alpha = 0.7f),
+                style = MaterialTheme.typography.bodySmall,
+            )
+            if (minutes > 0) {
+                Spacer(Modifier.height(7.dp))
+                Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.10f)) {
+                    Text(
+                        minutes.fa() + " دقیقهٔ قابل ثبت",
+                        color = Color.White.copy(alpha = 0.85f),
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(horizontal = 11.dp, vertical = 4.dp),
+                    )
+                }
             }
         }
-        Spacer(Modifier.height(18.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            CircleCtl(Icons.Filled.Refresh, "ریست", 52.dp, Color.White.copy(alpha = 0.12f), Color.White) { Chrono.reset() }
-            GradCtl(if (running) Icons.Filled.Pause else Icons.Filled.PlayArrow, "شروع", 76.dp) {
+        Spacer(Modifier.height(22.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
+            CircleCtl(Icons.Filled.Refresh, "ریست", 54.dp, Color.White.copy(alpha = 0.10f), Color.White) { Chrono.reset() }
+            GradCtl(if (running) Icons.Filled.Pause else Icons.Filled.PlayArrow, "شروع", 82.dp, running) {
                 if (running) Chrono.pause() else Chrono.start()
             }
-            Spacer(Modifier.width(4.dp))
+            Spacer(Modifier.size(54.dp))
         }
-        Spacer(Modifier.height(16.dp))
-        LogButton(enabled = hasCourse && sec >= 60, text = "ثبت مطالعه (${((sec / 60).toInt()).fa()} دقیقه)") {
-            Chrono.pause(); onLog((sec / 60).toInt())
+        Spacer(Modifier.height(20.dp))
+        LogButton(
+            enabled = hasCourse && sec >= 60,
+            text = "ثبت مطالعه (" + minutes.fa() + " دقیقه)",
+        ) {
+            Chrono.pause()
+            onLog(minutes)
         }
-        if (!hasCourse) Text("برای ثبت باید یک درس انتخاب کنی", color = Color(0xFFFBBF24), style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 6.dp))
+        if (!hasCourse) Text(
+            "برای ثبت باید یک درس انتخاب کنی",
+            color = Color(0xFFFBBF24), style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(top = 8.dp),
+        )
     }
 }
 
@@ -241,53 +276,67 @@ private fun PomodoroPanel(vm: StudyViewModel, hasCourse: Boolean) {
     }.coerceAtLeast(1)
     val progress = 1f - pomo.remainingSec.toFloat() / phaseTotal
     val isBreak = pomo.phase == Pomodoro.Phase.BREAK || pomo.phase == Pomodoro.Phase.LONG_BREAK
-    val ring = if (isBreak) FocusCyan else FocusMint
+    val ringA = if (isBreak) FocusCyan else FocusMint
+    val ringB = if (isBreak) Color(0xFF818CF8) else FocusCyan
     val phaseLabel = when (pomo.phase) {
-        Pomodoro.Phase.WORK -> "تمرکز"; Pomodoro.Phase.BREAK -> "استراحت کوتاه"
-        Pomodoro.Phase.LONG_BREAK -> "استراحت بلند"; Pomodoro.Phase.IDLE -> "آماده تمرکز"
+        Pomodoro.Phase.WORK -> "تمرکز"
+        Pomodoro.Phase.BREAK -> "استراحت کوتاه"
+        Pomodoro.Phase.LONG_BREAK -> "استراحت بلند"
+        Pomodoro.Phase.IDLE -> "آمادهٔ تمرکز"
     }
+
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(250.dp)) {
-            androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
-                val stroke = 16.dp.toPx(); val d = size.minDimension - stroke
-                val tl = Offset((size.width - d) / 2, (size.height - d) / 2)
-                drawArc(Color.White.copy(alpha = 0.08f), -90f, 360f, false, tl, Size(d, d), style = Stroke(stroke, cap = StrokeCap.Round))
-                drawArc(
-                    if (isBreak) Brush.linearGradient(listOf(FocusCyan, Color(0xFF818CF8))) else Brush.linearGradient(listOf(FocusMint, FocusCyan)),
-                    -90f, 360f * progress.coerceIn(0f, 1f), false, tl, Size(d, d), style = Stroke(stroke, cap = StrokeCap.Round))
+        TimerRing(progress = progress.coerceIn(0f, 1f), running = pomo.running, ringA = ringA, ringB = ringB) {
+            Surface(shape = CircleShape, color = ringA.copy(alpha = 0.16f)) {
+                Text(
+                    phaseLabel, color = ringA, style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.padding(horizontal = 13.dp, vertical = 4.dp),
+                )
             }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(phaseLabel, color = ring, style = MaterialTheme.typography.titleMedium)
-                Text(clockMs(pomo.remainingSec), color = Color.White, fontWeight = FontWeight.Black, fontSize = 52.sp)
-                Text("دوره ${pomo.completedWork.fa()} ✓", color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.labelMedium)
-            }
+            Spacer(Modifier.height(4.dp))
+            Text(clockMs(pomo.remainingSec), color = Color.White, fontWeight = FontWeight.Black, fontSize = 50.sp, maxLines = 1)
+            Spacer(Modifier.height(6.dp))
+            CycleDots(pomo.completedWork)
         }
-        Spacer(Modifier.height(16.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.CenterVertically) {
-            CircleCtl(Icons.Filled.Refresh, "ریست", 52.dp, Color.White.copy(alpha = 0.12f), Color.White) { Pomodoro.reset() }
-            GradCtl(if (pomo.running) Icons.Filled.Pause else Icons.Filled.PlayArrow, "شروع", 76.dp) {
+        Spacer(Modifier.height(20.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
+            CircleCtl(Icons.Filled.Refresh, "ریست", 54.dp, Color.White.copy(alpha = 0.10f), Color.White) { Pomodoro.reset() }
+            GradCtl(if (pomo.running) Icons.Filled.Pause else Icons.Filled.PlayArrow, "شروع", 82.dp, pomo.running) {
                 if (pomo.running) Pomodoro.pause() else Pomodoro.start(ctx)
             }
-            CircleCtl(Icons.Filled.SkipNext, "بعدی", 52.dp, Color.White.copy(alpha = 0.12f), Color.White) { Pomodoro.skip(ctx) }
+            CircleCtl(Icons.Filled.SkipNext, "بعدی", 54.dp, Color.White.copy(alpha = 0.10f), Color.White) { Pomodoro.skip(ctx) }
         }
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(18.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PresetChip("۲۵ / ۵", pomo.config.workMin == 25) { Pomodoro.setConfig(Pomodoro.Config(25, 5)) }
             PresetChip("۵۰ / ۱۰", pomo.config.workMin == 50) { Pomodoro.setConfig(Pomodoro.Config(50, 10)) }
             PresetChip("۹۰ / ۲۰", pomo.config.workMin == 90) { Pomodoro.setConfig(Pomodoro.Config(90, 20, 30)) }
         }
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(18.dp))
         val partial = if (pomo.phase == Pomodoro.Phase.WORK) ((pomo.config.workMin * 60 - pomo.remainingSec) / 60).coerceAtLeast(0) else 0
         val loggable = pending + partial
-        Text("مطالعه ثبت‌نشده: ${loggable.fa()} دقیقه", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodyMedium)
-        Spacer(Modifier.height(8.dp))
-        LogButton(enabled = hasCourse && loggable >= 1, text = "ثبت مطالعه تا اینجا (${loggable.fa()} دقیقه)") {
+        Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.07f)) {
+            Text(
+                "مطالعهٔ ثبت‌نشده: " + loggable.fa() + " دقیقه",
+                color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+        LogButton(
+            enabled = hasCourse && loggable >= 1,
+            text = "ثبت مطالعه تا اینجا (" + loggable.fa() + " دقیقه)",
+        ) {
             vm.log(loggable) { err ->
                 Toast.makeText(ctx, err ?: "ثبت شد 🎉", Toast.LENGTH_SHORT).show()
                 if (err == null) { vm.clearPending(); Pomodoro.reset() }
             }
         }
-        if (!hasCourse) Text("برای ثبت باید یک درس انتخاب کنی", color = Color(0xFFFBBF24), style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(top = 6.dp))
+        if (!hasCourse) Text(
+            "برای ثبت باید یک درس انتخاب کنی",
+            color = Color(0xFFFBBF24), style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(top = 8.dp),
+        )
     }
 }
 
@@ -354,10 +403,25 @@ private fun clockMs(totalSec: Int): String = String.format(Locale.US, "%02d:%02d
 
 @Composable
 private fun SegBtn(text: String, selected: Boolean, onClick: () -> Unit) {
-    Surface(shape = CircleShape, color = Color.Transparent, onClick = onClick) {
-        Box(Modifier.clip(CircleShape).background(if (selected) FocusGrad else Brush.linearGradient(listOf(Color.Transparent, Color.Transparent)))) {
-            Text(text, color = if (selected) FocusInk else Color.White,
-                style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 26.dp, vertical = 10.dp))
+    val scale by animateFloatAsState(
+        if (selected) 1f else 0.96f,
+        spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "seg",
+    )
+    Surface(shape = CircleShape, color = Color.Transparent, onClick = onClick, modifier = Modifier.scale(scale)) {
+        Box(
+            Modifier
+                .clip(CircleShape)
+                .background(if (selected) FocusGrad else Brush.linearGradient(listOf(Color.White.copy(alpha = 0.06f), Color.White.copy(alpha = 0.06f)))),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text,
+                color = if (selected) FocusInk else Color.White.copy(alpha = 0.72f),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (selected) FontWeight.Black else FontWeight.Medium,
+                modifier = Modifier.padding(horizontal = 26.dp, vertical = 10.dp),
+            )
         }
     }
 }
@@ -375,24 +439,100 @@ private fun CourseChip(text: String, selected: Boolean, onClick: () -> Unit) {
 
 @Composable
 private fun PresetChip(text: String, selected: Boolean, onClick: () -> Unit) {
-    Surface(shape = RoundedCornerShape(12.dp), color = if (selected) Color.White.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.08f), onClick = onClick) {
-        Text(text, color = Color.White, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+    val scale by animateFloatAsState(
+        if (selected) 1.05f else 1f,
+        spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "preset",
+    )
+    Surface(
+        shape = CircleShape,
+        color = if (selected) FocusMint.copy(alpha = 0.20f) else Color.White.copy(alpha = 0.06f),
+        border = BorderStroke(1.dp, if (selected) FocusMint else Color.White.copy(alpha = 0.12f)),
+        onClick = onClick,
+        modifier = Modifier.scale(scale),
+    ) {
+        Text(
+            text,
+            color = if (selected) FocusMint else Color.White.copy(alpha = 0.7f),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        )
     }
 }
 
+/**
+ * The button the whole screen exists for.
+ *
+ * It used to be a flat gradient box with no reaction to touch at all. Now, while
+ * it is armed, a light sweep travels across it so the eye is pulled there the
+ * moment enough minutes have accumulated; pressing springs it inward with a
+ * haptic tick, and the drop shadow fades in and out with the enabled state.
+ */
 @Composable
 private fun LogButton(enabled: Boolean, text: String, onClick: () -> Unit) {
+    val haptic = LocalHapticFeedback.current
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        if (pressed && enabled) 0.96f else 1f,
+        spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "logScale",
+    )
+    val glow by animateFloatAsState(if (enabled) 1f else 0f, tween(400), label = "logGlow")
+    val inf = rememberInfiniteTransition(label = "logShine")
+    val shine by inf.animateFloat(
+        -1f, 1f,
+        infiniteRepeatable(tween(2000, easing = LinearEasing), RepeatMode.Restart),
+        label = "shine",
+    )
+
     Surface(
-        shape = RoundedCornerShape(20.dp),
+        onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onClick()
+        },
+        enabled = enabled,
+        shape = RoundedCornerShape(22.dp),
         color = Color.Transparent,
-        onClick = { if (enabled) onClick() },
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+        shadowElevation = (14f * glow).dp,
+        interactionSource = interaction,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp)
+            .scale(scale),
     ) {
-        Box(Modifier.clip(RoundedCornerShape(20.dp)).background(
-            if (enabled) FocusGrad else Brush.linearGradient(listOf(Color.White.copy(alpha = 0.10f), Color.White.copy(alpha = 0.10f))))) {
-            Text(text, color = if (enabled) FocusInk else Color.White.copy(alpha = 0.5f),
-                style = MaterialTheme.typography.titleSmall, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 15.dp))
+        Box(
+            Modifier
+                .clip(RoundedCornerShape(22.dp))
+                .background(
+                    if (enabled) FocusGrad
+                    else Brush.linearGradient(listOf(Color.White.copy(alpha = 0.07f), Color.White.copy(alpha = 0.07f)))
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (enabled) {
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .graphicsLayer { translationX = shine * size.width }
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(Color.Transparent, Color.White.copy(alpha = 0.30f), Color.Transparent)
+                            )
+                        )
+                )
+            }
+            Text(
+                text,
+                color = if (enabled) FocusInk else Color.White.copy(alpha = 0.32f),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(vertical = 16.dp, horizontal = 18.dp),
+            )
         }
     }
 }
@@ -406,10 +546,42 @@ private fun CircleCtl(icon: androidx.compose.ui.graphics.vector.ImageVector, des
 
 /** دکمهٔ اصلی گرادیانی تایمر (پخش/توقف). */
 @Composable
-private fun GradCtl(icon: androidx.compose.ui.graphics.vector.ImageVector, desc: String, size: androidx.compose.ui.unit.Dp, onClick: () -> Unit) {
-    Surface(shape = CircleShape, color = Color.Transparent, onClick = onClick, shadowElevation = 10.dp, modifier = Modifier.size(size)) {
-        Box(Modifier.background(FocusGrad), contentAlignment = Alignment.Center) {
-            Icon(icon, desc, tint = FocusInk, modifier = Modifier.size(size * 0.46f))
+private fun GradCtl(icon: ImageVector, desc: String, box: Dp, active: Boolean = false, onClick: () -> Unit) {
+    val haptic = LocalHapticFeedback.current
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        if (pressed) 0.90f else 1f,
+        spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "ctlScale",
+    )
+    val inf = rememberInfiniteTransition(label = "ctlHalo")
+    val halo by inf.animateFloat(
+        1.04f, if (active) 1.26f else 1.04f,
+        infiniteRepeatable(tween(1500, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "halo",
+    )
+
+    Box(contentAlignment = Alignment.Center) {
+        Box(
+            Modifier
+                .size(box * halo)
+                .background(FocusMint.copy(alpha = if (active) 0.18f else 0.07f), CircleShape)
+        )
+        Surface(
+            onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onClick()
+            },
+            shape = CircleShape,
+            color = Color.Transparent,
+            shadowElevation = 12.dp,
+            interactionSource = interaction,
+            modifier = Modifier.size(box).scale(scale),
+        ) {
+            Box(Modifier.background(FocusGrad), contentAlignment = Alignment.Center) {
+                Icon(icon, desc, tint = FocusInk, modifier = Modifier.size(box * 0.46f))
+            }
         }
     }
 }
@@ -429,5 +601,95 @@ private fun SoundCard(emoji: String, label: String, active: Boolean, volume: Flo
                     colors = SliderDefaults.colors(thumbColor = FocusMint, activeTrackColor = FocusMint, inactiveTrackColor = Color.White.copy(alpha = 0.2f)))
             }
         }
+    }
+}
+
+/**
+ * Shared timer face for the chronometer and the pomodoro.
+ *
+ * Replaces the flat single stroke circle both panels used to draw: a soft halo
+ * that brightens while the timer runs, a minute dial of sixty ticks, a dim
+ * track, and a sweep gradient progress arc. The whole face breathes slowly
+ * while running, which reads as "alive" without being distracting.
+ */
+@Composable
+private fun TimerRing(
+    progress: Float,
+    running: Boolean,
+    ringA: Color,
+    ringB: Color,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val inf = rememberInfiniteTransition(label = "ring")
+    val breath by inf.animateFloat(
+        1f, if (running) 1.03f else 1f,
+        infiniteRepeatable(tween(2400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "breath",
+    )
+    val shown by animateFloatAsState(progress.coerceIn(0f, 1f), tween(500), label = "ringProgress")
+    val haloAlpha by animateFloatAsState(if (running) 0.22f else 0.07f, tween(700), label = "halo")
+
+    Box(
+        modifier = Modifier.size(264.dp).scale(breath),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            Modifier
+                .size(264.dp)
+                .background(Brush.radialGradient(listOf(ringA.copy(alpha = haloAlpha), Color.Transparent)), CircleShape)
+        )
+        Canvas(Modifier.size(232.dp)) {
+            val stroke = 16.dp.toPx()
+            val d = size.minDimension - stroke * 2.6f
+            val tl = Offset((size.width - d) / 2f, (size.height - d) / 2f)
+            val cx = size.width / 2f
+            val cy = size.height / 2f
+            val rBase = d / 2f + stroke * 1.15f
+            for (i in 0 until 60) {
+                val a = Math.toRadians((i * 6).toDouble())
+                val major = i % 5 == 0
+                val len = if (major) stroke * 0.5f else stroke * 0.26f
+                val r1 = rBase
+                val r0 = r1 - len
+                drawLine(
+                    color = Color.White.copy(alpha = if (major) 0.22f else 0.09f),
+                    start = Offset(cx + (r0 * cos(a)).toFloat(), cy + (r0 * sin(a)).toFloat()),
+                    end = Offset(cx + (r1 * cos(a)).toFloat(), cy + (r1 * sin(a)).toFloat()),
+                    strokeWidth = if (major) stroke * 0.15f else stroke * 0.08f,
+                    cap = StrokeCap.Round,
+                )
+            }
+            drawArc(
+                color = Color.White.copy(alpha = 0.07f),
+                startAngle = -90f, sweepAngle = 360f, useCenter = false,
+                topLeft = tl, size = Size(d, d),
+                style = Stroke(width = stroke, cap = StrokeCap.Round),
+            )
+            if (shown > 0.001f) drawArc(
+                brush = Brush.sweepGradient(listOf(ringA, ringB, ringA)),
+                startAngle = -90f, sweepAngle = 360f * shown, useCenter = false,
+                topLeft = tl, size = Size(d, d),
+                style = Stroke(width = stroke, cap = StrokeCap.Round),
+            )
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally, content = content)
+    }
+}
+
+/** Four dots showing where in the current pomodoro set the user is. */
+@Composable
+private fun CycleDots(done: Int) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+        for (i in 0 until 4) {
+            val filled = if (done > 0 && done % 4 == 0) true else (done % 4) > i
+            val a by animateFloatAsState(if (filled) 1f else 0.22f, tween(400), label = "dot")
+            Box(Modifier.size(if (filled) 9.dp else 6.dp).background(FocusMint.copy(alpha = a), CircleShape))
+        }
+        Spacer(Modifier.width(6.dp))
+        Text(
+            "دورهٔ " + done.fa(),
+            color = Color.White.copy(alpha = 0.6f),
+            style = MaterialTheme.typography.labelSmall,
+        )
     }
 }

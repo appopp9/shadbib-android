@@ -154,6 +154,16 @@ fun StudyRoomScreen(vm: StudyRoomViewModel = viewModel()) {
     var cheerTarget by remember { mutableStateOf<RoomOccupant?>(null) }
     var toast by remember { mutableStateOf<String?>(null) }
 
+    // Home can ask for an overlay to be showing the moment the room appears.
+    val requestedSheet by NavBus.roomSheet.collectAsState()
+    LaunchedEffect(requestedSheet) {
+        val s = requestedSheet
+        if (s != null) {
+            overlay = s
+            NavBus.consumeRoomSheet()
+        }
+    }
+
     // ---------------- حضور وابسته به چرخهٔ عمر ----------------
     // تا وقتی این صفحه جلوی چشم کاربر است حضور برقرار است؛ همین که اپ مینیمایز
     // شود یا صفحه عوض شود، room_leave می‌رود و فوراً از اتاق حذف می‌شویم.
@@ -443,7 +453,7 @@ fun StudyRoomScreen(vm: StudyRoomViewModel = viewModel()) {
                     GoalRing(
                         done = stats.todayMinutes,
                         goal = goal,
-                        onClick = { RoomPrefs.cycleGoal() },
+                        onClick = { overlay = "goal" },
                     )
                     Spacer(Modifier.width(6.dp))
                     Box(
@@ -501,7 +511,7 @@ fun StudyRoomScreen(vm: StudyRoomViewModel = viewModel()) {
 
         // ---------------- لایه ۱۰: پنجره‌ها ----------------
         val sheetOverlay = overlay == "shop" || overlay == "roster" ||
-            overlay == "top" || overlay == "course"
+            overlay == "top" || overlay == "course" || overlay == "goal"
         if (overlay.isNotEmpty() && !sheetOverlay) {
             Box(
                 Modifier
@@ -603,6 +613,13 @@ fun StudyRoomScreen(vm: StudyRoomViewModel = viewModel()) {
 
             "roster" -> OccupantSheet(
                 onUser = { u -> overlay = ""; NavBus.requestUser(u) },
+                onDismiss = { overlay = "" },
+            )
+
+            "goal" -> GoalSheet(
+                current = goal,
+                done = stats.todayMinutes,
+                onPick = { g -> RoomPrefs.setGoal(g); overlay = "" },
                 onDismiss = { overlay = "" },
             )
 
@@ -820,7 +837,7 @@ private fun GoalRing(done: Int, goal: Int, onClick: () -> Unit) {
     val frac = if (goal <= 0) 0f else (done.toFloat() / goal.toFloat()).coerceIn(0f, 1f)
     Box(
         Modifier
-            .size(34.dp)
+            .size(42.dp)
             .clickable(remember { MutableInteractionSource() }, indication = null) { onClick() },
         contentAlignment = Alignment.Center,
     ) {
@@ -846,10 +863,12 @@ private fun GoalRing(done: Int, goal: Int, onClick: () -> Unit) {
                 style = Stroke(width = sw, cap = StrokeCap.Round),
             )
         }
+        // The percent sign is what was missing: without it this looked like
+        // an unlabelled counter that changed at random on every tap.
         Text(
-            (frac * 100f).toInt().fa(),
+            (frac * 100f).toInt().fa() + "\u066a",
             color = Ink,
-            fontSize = 9.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Black,
             maxLines = 1,
         )

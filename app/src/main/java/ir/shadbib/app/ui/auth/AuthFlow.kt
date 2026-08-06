@@ -231,7 +231,7 @@ fun AuthFlow() {
             AuthLogo()
             Spacer(Modifier.height(14.dp))
             Text(
-                "شادبیب",
+                "درس هاب",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -284,7 +284,7 @@ fun AuthFlow() {
                                         value = username,
                                         onValueChange = { username = it },
                                         label = "نام کاربری",
-                                        placeholder = "hasan",
+                                        placeholder = "username",
                                         leading = Icons.Rounded.Person,
                                     )
                                     Spacer(Modifier.height(12.dp))
@@ -297,7 +297,7 @@ fun AuthFlow() {
                                     )
                                     Spacer(Modifier.height(20.dp))
                                     AuthPrimaryButton(
-                                        text = "ورود به شادبیب",
+                                        text = "ورود به درس هاب",
                                         loading = loading,
                                         enabled = username.isNotBlank() && password.length >= 6,
                                     ) { doLogin(username, password) }

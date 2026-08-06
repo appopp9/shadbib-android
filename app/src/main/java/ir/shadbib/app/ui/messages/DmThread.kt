@@ -282,7 +282,7 @@ fun DmThreadScreen(username: String, onBack: () -> Unit, vm: DmThreadViewModel =
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.95f)), contentAlignment = Alignment.Center) {
                 AsyncImage(model = Api.mediaUrl(viewImage), contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth())
                 IconButton(onClick = { viewImage = null }, modifier = Modifier.align(Alignment.TopStart).padding(12.dp)) { Icon(Icons.Rounded.Close, "بستن", tint = Color.White) }
-                IconButton(onClick = { ChatMedia.download(ctx, Api.mediaUrl(viewImage), "shadbib_" + System.currentTimeMillis() + ".jpg") }, modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)) { Icon(androidx.compose.material.icons.Icons.Rounded.Download, "دانلود", tint = Color.White) }
+                IconButton(onClick = { ChatMedia.download(ctx, Api.mediaUrl(viewImage), "darshub_" + System.currentTimeMillis() + ".jpg") }, modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)) { Icon(androidx.compose.material.icons.Icons.Rounded.Download, "دانلود", tint = Color.White) }
             }
         }
     }

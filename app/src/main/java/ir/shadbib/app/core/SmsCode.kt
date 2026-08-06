@@ -39,7 +39,7 @@ import com.google.android.gms.common.api.Status
  * startSmsUserConsent simply fails and the keypad stays the only way in.
  */
 
-private const val TAG = "ShadBibSms"
+private const val TAG = "DarsHubSms"
 
 /** Latin, Persian and Arabic-Indic digits, so any sender template parses. */
 private fun latinDigits(s: String): String = buildString {

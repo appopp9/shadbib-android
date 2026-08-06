@@ -1084,7 +1084,7 @@ private fun ComposerAttach(icon: androidx.compose.ui.graphics.vector.ImageVector
 }
 
 
-/** انتخاب موزیک یکپارچه: از کتابخانه شادبیب یا فایل‌های دستگاه — یک بخش برای هر دو. */
+/** انتخاب موزیک یکپارچه: از کتابخانه درس هاب یا فایل‌های دستگاه — یک بخش برای هر دو. */
 @Composable
 fun MusicSourceSheet(onLibrary: (MusicTrack) -> Unit, onDevice: (Uri) -> Unit, onDismiss: () -> Unit) {
     var tab by remember { mutableIntStateOf(0) }
@@ -1093,7 +1093,7 @@ fun MusicSourceSheet(onLibrary: (MusicTrack) -> Unit, onDevice: (Uri) -> Unit, o
         Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 20.dp)) {
             Text("انتخاب موزیک 🎵", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(10.dp))
-            SegmentedTabs(options = listOf("کتابخانه شادبیب", "فایل‌های دستگاه"), selected = tab) { t ->
+            SegmentedTabs(options = listOf("کتابخانه درس هاب", "فایل‌های دستگاه"), selected = tab) { t ->
                 tab = t
                 if (t == 1) pickAudio.launch("audio/*")
             }

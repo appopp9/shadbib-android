@@ -20,9 +20,9 @@ android {
     signingConfigs {
         release {
             storeFile file('../keystore/darshub.keystore')
-            storePassword 'darshub2026'
-            keyAlias 'darshub'
-            keyPassword 'darshub2026'
+            storePassword 'shadbib2026'
+            keyAlias 'shadbib'
+            keyPassword 'shadbib2026'
         }
     }
 

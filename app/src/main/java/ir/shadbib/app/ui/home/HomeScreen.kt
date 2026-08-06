@@ -89,6 +89,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ir.shadbib.app.core.Fmt
+import ir.shadbib.app.core.Icon3D
 import ir.shadbib.app.core.NavBus
 import ir.shadbib.app.core.Store
 import ir.shadbib.app.core.fa
@@ -500,7 +501,7 @@ private fun CourseManagerSheet(vm: HomeViewModel, courses: List<Course>, onDismi
 
 private data class Shortcut(
     val label: String,
-    val icon: ImageVector,
+    val emoji: String,
     val tint: Color,
     val onClick: () -> Unit,
 )
@@ -521,13 +522,14 @@ private fun QuickAccessGrid(
     onCourses: () -> Unit,
 ) {
     val cs = MaterialTheme.colorScheme
+    // Emoji, not vectors, so the 3D pack can take over each tile automatically.
     val items = listOf(
-        Shortcut("تسک‌ها", Icons.Rounded.TaskAlt, cs.primary, onTasks),
-        Shortcut("کتابخانه", Icons.Rounded.LibraryMusic, cs.tertiary, onLibrary),
-        Shortcut("اجتماع", Icons.Rounded.Groups, cs.secondary, onCommunity),
-        Shortcut("با بقیه بخون", Icons.Rounded.MenuBook, cs.primary, onRoom),
-        Shortcut("آمار من", Icons.Rounded.Insights, cs.tertiary, onStats),
-        Shortcut("دروس من", Icons.Rounded.Edit, cs.secondary, onCourses),
+        Shortcut("تسک‌ها", "✅", cs.primary, onTasks),
+        Shortcut("کتابخانه", "🎵", cs.tertiary, onLibrary),
+        Shortcut("اجتماع", "👥", cs.secondary, onCommunity),
+        Shortcut("با بقیه بخون", "📚", cs.primary, onRoom),
+        Shortcut("آمار من", "📊", cs.tertiary, onStats),
+        Shortcut("دروس من", "✏", cs.secondary, onCourses),
     )
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         items.chunked(3).forEachIndexed { rowIndex, row ->
@@ -578,7 +580,7 @@ private fun ShortcutTile(sc: Shortcut, delayMs: Int, modifier: Modifier = Modifi
         ) {
             Box(
                 Modifier
-                    .size(46.dp)
+                    .size(52.dp)
                     .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
@@ -587,7 +589,7 @@ private fun ShortcutTile(sc: Shortcut, delayMs: Int, modifier: Modifier = Modifi
                     ),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(sc.icon, sc.label, tint = sc.tint, modifier = Modifier.size(22.dp))
+                Icon3D(sc.emoji, size = 30.dp, contentDescription = sc.label)
             }
             Spacer(Modifier.height(8.dp))
             Text(
@@ -702,7 +704,7 @@ private fun CelebrationDialog(streak: Int, onDismiss: () -> Unit) {
                                     CircleShape,
                                 )
                         )
-                        Text("🔥", fontSize = 78.sp, modifier = Modifier.scale(pulse))
+                        Icon3D("🔥", size = 92.dp, modifier = Modifier.scale(pulse))
                     }
                     Spacer(Modifier.height(10.dp))
                     Text(

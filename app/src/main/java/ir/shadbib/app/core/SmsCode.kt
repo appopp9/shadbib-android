@@ -1,4 +1,5 @@
 package ir.shadbib.app.core
+import androidx.compose.runtime.getValue
 
 import android.app.Activity
 import android.content.BroadcastReceiver
@@ -11,7 +12,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext

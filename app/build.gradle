@@ -12,17 +12,17 @@ android {
         applicationId "ir.darshub.app"
         minSdk 24
         targetSdk 34
-        versionCode 26
-        versionName "2.4.0"
+        versionCode 27
+        versionName "2.4.1"
         vectorDrawables { useSupportLibrary = true }
     }
 
     signingConfigs {
         release {
             storeFile file('../keystore/darshub.keystore')
-            storePassword 'shadbib2026'
-            keyAlias 'shadbib'
-            keyPassword 'shadbib2026'
+            storePassword 'darshub2026'
+            keyAlias 'darshub'
+            keyPassword 'darshub2026'
         }
     }
 

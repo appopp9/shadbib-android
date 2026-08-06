@@ -10,6 +10,7 @@ import ir.darshub.app.core.str
 import ir.darshub.app.core.strOrNull
 import ir.darshub.app.data.Course
 import ir.darshub.app.data.FriendStat
+import ir.darshub.app.data.StudyGroup
 import ir.darshub.app.data.NotificationItem
 import ir.darshub.app.data.StudyToday
 import kotlinx.coroutines.async
@@ -32,6 +33,8 @@ class HomeViewModel : ViewModel() {
         val statusText: String = "",
         val mood: String = "😊",
         val friends: List<FriendStat> = emptyList(),
+        val groups: List<StudyGroup> = emptyList(),
+        val groupUnread: Map<Int, Int> = emptyMap(),
         val courses: List<Course> = emptyList(),
         val notifications: List<NotificationItem> = emptyList(),
     )
@@ -71,6 +74,21 @@ class HomeViewModel : ViewModel() {
                     val wakeD = async { runCatching { Api.obj(Api.get("wakeup")).strOrNull("wakeup_time") }.getOrNull() }
                     val statusD = async { runCatching { Api.obj(Api.get("status")).str("status_text") }.getOrDefault("") }
                     val friendsD = async { runCatching { FriendStat.list(Api.arr(Api.get("following_stats"))) }.getOrDefault(emptyList()) }
+                    val groupsD = async { runCatching { StudyGroup.list(Api.arr(Api.get("group_list"))) }.getOrDefault(emptyList()) }
+                    val groupMetaD = async {
+                        runCatching {
+                            val meta = Api.obj(Api.get("inbox_meta"))
+                            val grs = meta.optJSONArray("groups")
+                            val m = mutableMapOf<Int, Int>()
+                            if (grs != null) {
+                                for (i in 0 until grs.length()) {
+                                    val g = grs.getJSONObject(i)
+                                    m[g.optInt("group_id")] = g.optInt("unread", 0)
+                                }
+                            }
+                            m
+                        }.getOrDefault(emptyMap())
+                    }
                     val coursesD = async { runCatching { Course.list(Api.arr(Api.get("courses"))) }.getOrDefault(emptyList()) }
                     val notifD = async { runCatching { NotificationItem.list(Api.arr(Api.get("notifications"))) }.getOrDefault(emptyList()) }
                     state.update {
@@ -82,6 +100,8 @@ class HomeViewModel : ViewModel() {
                             wakeup = wakeD.await(),
                             statusText = statusD.await(),
                             friends = friendsD.await(),
+                            groups = groupsD.await(),
+                            groupUnread = groupMetaD.await(),
                             courses = coursesD.await(),
                             notifications = notifD.await(),
                         )

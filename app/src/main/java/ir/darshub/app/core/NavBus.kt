@@ -34,6 +34,13 @@ object NavBus {
     private val _openRoute = MutableStateFlow<String?>(null)
     val openRoute: StateFlow<String?> get() = _openRoute
 
+    /* Home lists each user's study groups; taps open the chat or the groups home. */
+    private val _openGroup = MutableStateFlow<Pair<Int, String>?>(null)
+    val openGroup: StateFlow<Pair<Int, String>?> get() = _openGroup
+
+    private val _openGroupsHome = MutableStateFlow(false)
+    val openGroupsHome: StateFlow<Boolean> get() = _openGroupsHome
+
     fun requestDm(username: String) { _openDm.value = username }
     fun consumeDm() { _openDm.value = null }
 
@@ -60,4 +67,10 @@ object NavBus {
 
     fun requestRoute(route: String) { _openRoute.value = route }
     fun consumeRoute() { _openRoute.value = null }
+
+    fun requestGroup(id: Int, name: String) { _openGroup.value = id to name }
+    fun consumeGroup() { _openGroup.value = null }
+
+    fun requestGroupsHome() { _openGroupsHome.value = true }
+    fun consumeGroupsHome() { _openGroupsHome.value = false }
 }

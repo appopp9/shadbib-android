@@ -119,8 +119,10 @@ fun MainScaffold() {
 
     val openDm by NavBus.openDm.collectAsState()
     val openCh by NavBus.openChannel.collectAsState()
-    LaunchedEffect(openDm, openCh) {
-        if ((openDm != null || openCh != null) && currentRoute != "messages") {
+    val openGrp by NavBus.openGroup.collectAsState()
+    val openGrpHome by NavBus.openGroupsHome.collectAsState()
+    LaunchedEffect(openDm, openCh, openGrp, openGrpHome) {
+        if ((openDm != null || openCh != null || openGrp != null || openGrpHome) && currentRoute != "messages") {
             nav.navigate("messages") {
                 popUpTo(nav.graph.findStartDestination().id) { saveState = true }
                 launchSingleTop = true; restoreState = true

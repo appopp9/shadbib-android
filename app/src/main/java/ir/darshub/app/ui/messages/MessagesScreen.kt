@@ -106,6 +106,16 @@ fun MessagesScreen(vm: MessagesViewModel = viewModel()) {
         openCh?.let { route = MsgRoute.Channel(it.first, it.second, it.third); NavBus.consumeChannel() }
     }
 
+    // study-group requests coming from the Home groups section
+    val openGrp by NavBus.openGroup.collectAsState()
+    LaunchedEffect(openGrp) {
+        openGrp?.let { route = MsgRoute.Group(it.first, it.second); NavBus.consumeGroup() }
+    }
+    val openGrpHome by NavBus.openGroupsHome.collectAsState()
+    LaunchedEffect(openGrpHome) {
+        if (openGrpHome) { route = MsgRoute.GroupsHome; NavBus.consumeGroupsHome() }
+    }
+
     androidx.compose.animation.AnimatedContent(
         targetState = route,
         transitionSpec = {

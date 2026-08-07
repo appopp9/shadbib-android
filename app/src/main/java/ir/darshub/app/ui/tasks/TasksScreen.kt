@@ -329,8 +329,8 @@ private fun TaskRow(task: TaskItem, showDate: Boolean, busy: Boolean = false, on
         ),
         modifier = Modifier
             .fillMaxWidth()
-            .pressScale(cardInter, pressedScale = 0.98f),
-        interactionSource = cardInter,
+            .pressScale(cardInter, pressedScale = 0.98f)
+            .clickable(interactionSource = cardInter, indication = null) { onToggle() },
     ) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 14.dp),

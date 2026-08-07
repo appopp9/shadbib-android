@@ -116,6 +116,7 @@ private val FocusCyan = Color(0xFF38BDF8)
 private val FocusInk = Color(0xFF06110C)
 private val FocusGrad = Brush.linearGradient(listOf(Color(0xFF10B981), Color(0xFF38BDF8)))
 
+@Composable
 fun StudySpaceDialog(onClose: () -> Unit, vm: StudyViewModel = viewModel()) {
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnBackPress = true)) {
         StudySpaceContent(onClose, vm)
@@ -419,7 +420,7 @@ private fun SegBtn(text: String, selected: Boolean, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     Surface(
         shape = CircleShape,
-        color = if (selected) FocusGrad else Color.White.copy(alpha = 0.06f),
+        color = if (selected) FocusMint else Color.White.copy(alpha = 0.06f),
         onClick = onClick,
         interactionSource = interaction,
         modifier = Modifier.pressScale(interaction, pressedScale = 0.95f),

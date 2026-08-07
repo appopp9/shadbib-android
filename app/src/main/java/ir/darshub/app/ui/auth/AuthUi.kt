@@ -100,8 +100,8 @@ import ir.darshub.app.ui.theme.pressScale
 fun AuthBackdrop(content: @Composable BoxScope.() -> Unit) {
     val cs = MaterialTheme.colorScheme
     val t = rememberInfiniteTransition(label = "authOrbs")
-    val f1 by t.animateFloat(-10f, 10f, infiniteRepeatable(tween(3600, easing = FastOutSlowInEasing), RepeatMode.Reverse, startOffset = 200), label = "orbA")
-    val f2 by t.animateFloat(9f, -9f, infiniteRepeatable(tween(4200, easing = FastOutSlowInEasing), RepeatMode.Reverse, startOffset = 900), label = "orbB")
+    val f1 by t.animateFloat(-10f, 10f, infiniteRepeatable(tween(3600, easing = FastOutSlowInEasing), RepeatMode.Reverse, initialStartOffset = 200), label = "orbA")
+    val f2 by t.animateFloat(9f, -9f, infiniteRepeatable(tween(4200, easing = FastOutSlowInEasing), RepeatMode.Reverse, initialStartOffset = 900), label = "orbB")
     Box(
         Modifier
             .fillMaxSize()

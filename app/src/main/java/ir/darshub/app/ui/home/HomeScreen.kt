@@ -891,6 +891,8 @@ private fun CelebrationDialog(streak: Int, onDismiss: () -> Unit) {
     }
     val random = remember { kotlin.random.Random(streak * 31L) }
     val confetti = remember { List(26) { Triple(random.nextFloat() * 400f - 200f, random.nextFloat() * 300f - 150f, random.nextFloat() * 6f + 3f) } }
+    val confettiPrimary = MaterialTheme.colorScheme.primary
+    val confettiSecondary = MaterialTheme.colorScheme.secondary
     Dialog(onDismissRequest = onDismiss) {
         Box(contentAlignment = Alignment.Center) {
             Canvas(Modifier.size(340.dp)) {
@@ -898,8 +900,8 @@ private fun CelebrationDialog(streak: Int, onDismiss: () -> Unit) {
                 confetti.forEachIndexed { i, (x, y, r) ->
                     drawCircle(
                         color = androidx.compose.ui.graphics.lerp(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.secondary,
+                            confettiPrimary,
+                            confettiSecondary,
                             (i % 10) / 10f,
                         ).copy(alpha = fade),
                         radius = r,

@@ -1,7 +1,6 @@
 package ir.darshub.app.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -24,7 +23,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -32,10 +30,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -53,7 +49,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -65,26 +60,19 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import ir.darshub.app.core.Api
 import ir.darshub.app.core.fa
-import ir.darshub.app.ui.theme.DarsMotion
 import ir.darshub.app.ui.theme.brandGradient
-import ir.darshub.app.ui.theme.pressScale
 import kotlin.math.abs
 import kotlinx.coroutines.delay
 
-/**
- * کارت اصلی اپ — لایه‌دار با گوشهٔ بزرگ، سایهٔ نرم رنگی، افکت فشار فنری و
- * هپتیک. `tonal` حالت برجستهٔ سطح را فعال می‌کند.
- */
+/** کارت اصلی اپ — لایه‌ای، گوشهٔ ۲۸، با افکت فشار + هپتیک وقتی کلیک‌پذیره. */
 @Composable
 fun AppCard(
     modifier: Modifier = Modifier,
@@ -92,23 +80,20 @@ fun AppCard(
     tonal: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val cs = MaterialTheme.colorScheme
     val color =
-        if (tonal) cs.surfaceContainerHigh.copy(alpha = 0.9f)
-        else cs.surface
+        if (tonal) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.65f)
+        else MaterialTheme.colorScheme.surface
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
         if (pressed && onClick != null) 0.972f else 1f,
-        DarsMotion.springSnappy(), label = "cardPress")
+        spring(dampingRatio = 0.55f, stiffness = 800f), label = "cardPress")
     val haptic = LocalHapticFeedback.current
-    val elev by androidx.compose.animation.core.animateDpAsState(if (pressed && onClick != null) 2.dp else 8.dp, DarsMotion.springGentle(), label = "cardElev")
     Surface(
-        modifier = modifier.fillMaxWidth().graphicsLayer { scaleX = scale; scaleY = scale }
-            .shadow(elev, MaterialTheme.shapes.large, ambientColor = cs.primary.copy(alpha = 0.16f), spotColor = cs.primary.copy(alpha = 0.22f)),
+        modifier = modifier.fillMaxWidth().graphicsLayer { scaleX = scale; scaleY = scale },
         shape = MaterialTheme.shapes.large,
         color = color,
-        border = BorderStroke(1.dp, cs.outlineVariant.copy(alpha = 0.6f)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
     ) {
         val inner = Modifier
             .let {
@@ -121,24 +106,23 @@ fun AppCard(
     }
 }
 
-/** عنوان بخش: نشانگر قرصی گرادیانی + عنوان + اکشن اختیاری. */
 @Composable
 fun SectionTitle(title: String, modifier: Modifier = Modifier, actionText: String? = null, onAction: (() -> Unit)? = null) {
     Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Box(
-            Modifier.size(width = 4.dp, height = 18.dp)
+            Modifier.size(width = 4.dp, height = 17.dp)
                 .background(brandGradient(), CircleShape)
         )
         Spacer(Modifier.size(9.dp))
         Text(title, style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.weight(1f))
         if (actionText != null && onAction != null) {
-            TextButton(onClick = onAction) { Text(actionText + " ←", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
+            TextButton(onClick = onAction) { Text(actionText, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
         }
     }
 }
 
-/** دکمهٔ گرادیانی برند — قرصی، با سایهٔ رنگی، فشار فنری و هپتیک. */
+/** دکمهٔ گرادیانی برند — قرصی، با فشار فنری و هپتیک. */
 @Composable
 fun GradientButton(
     text: String,
@@ -151,21 +135,18 @@ fun GradientButton(
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
         if (pressed && enabled) 0.955f else 1f,
-        DarsMotion.springSnappy(), label = "btnPress")
+        spring(dampingRatio = 0.5f, stiffness = 900f), label = "btnPress")
     val haptic = LocalHapticFeedback.current
     Box(
         modifier
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .alpha(if (enabled) 1f else 0.45f)
-            .shadow(if (enabled) 12.dp else 0.dp, CircleShape,
-                ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
-                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
             .clip(CircleShape)
             .background(brandGradient())
             .clickable(interaction, indication = null, enabled = enabled) {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove); onClick()
             }
-            .padding(horizontal = 24.dp, vertical = 13.dp),
+            .padding(horizontal = 26.dp, vertical = 15.dp),
         contentAlignment = Alignment.Center,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -175,67 +156,52 @@ fun GradientButton(
     }
 }
 
-/** تب‌های قرصی (امروز / آینده / تاریخچه و ...) با نشانگر لغزان فنری. */
+/** تب‌های قرصی (امروز / آینده / تاریخچه و ...) با انیمیشن رنگ نرم. */
 @Composable
 fun SegmentedTabs(options: List<String>, selected: Int, modifier: Modifier = Modifier, onSelect: (Int) -> Unit) {
     val haptic = LocalHapticFeedback.current
-    val cs = MaterialTheme.colorScheme
-    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = CircleShape,
-        color = cs.surfaceContainerLow,
-        border = BorderStroke(1.dp, cs.outlineVariant.copy(alpha = 0.5f)),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
     ) {
-        BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val itemW = maxWidth / options.size
-            val idx = if (rtl) options.size - 1 - selected else selected
-            val pillX by androidx.compose.animation.core.animateDpAsState(
-                itemW * idx, DarsMotion.springSnappy(), label = "tabPill")
-            val pillW by androidx.compose.animation.core.animateDpAsState(
-                itemW - 8.dp, DarsMotion.springSnappy(), label = "tabPillW")
-            Box(
-                Modifier
-                    .padding(4.dp)
-                    .offset(x = pillX)
-                    .width(pillW)
-                    .height(38.dp)
-                    .clip(CircleShape)
-                    .background(brandGradient()),
-            )
-            Row(Modifier.fillMaxWidth()) {
-                options.forEachIndexed { i, label ->
-                    val sel = i == selected
-                    val fg by animateColorAsState(
-                        if (sel) cs.onPrimary else cs.onSurfaceVariant,
-                        tween(DarsMotion.Fast), label = "tabFg")
-                    Box(
-                        Modifier.weight(1f).height(46.dp).clip(CircleShape)
-                            .clickable(remember { MutableInteractionSource() }, indication = null) {
-                                if (!sel) { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove); onSelect(i) }
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) { Text(label, style = MaterialTheme.typography.labelLarge, color = fg, maxLines = 1) }
-                }
+        Row(Modifier.padding(4.dp)) {
+            options.forEachIndexed { i, label ->
+                val sel = i == selected
+                val bg by androidx.compose.animation.animateColorAsState(
+                    if (sel) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f) else Color.Transparent,
+                    tween(260), label = "tabBg")
+                val fg by androidx.compose.animation.animateColorAsState(
+                    if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tween(260), label = "tabFg")
+                Box(
+                    Modifier.weight(1f).clip(CircleShape).background(bg)
+                        .clickable(remember { MutableInteractionSource() }, indication = null) {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove); onSelect(i)
+                        }
+                        .padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center,
+                ) { Text(label, style = MaterialTheme.typography.labelLarge, color = fg) }
             }
         }
     }
 }
 
-/** اسکلتون شیمری برای لیست‌ها — با گوشه‌های نرم‌تر و فاصله‌گذاری بهتر. */
+/** اسکلتون شیمری برای لیست‌ها. */
 @Composable
 fun LoadingBox(modifier: Modifier = Modifier, height: Dp = 120.dp) {
-    val lines = (height.value / 48).toInt().coerceIn(1, 6)
-    Column(modifier.fillMaxWidth().height(height), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+    val lines = (height.value / 46).toInt().coerceIn(1, 6)
+    Column(modifier.fillMaxWidth().height(height), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         repeat(lines) { i ->
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(42.dp).clip(CircleShape).background(shimmerBrush()))
-                Spacer(Modifier.size(12.dp))
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(Modifier.fillMaxWidth(if (i % 2 == 0) 0.62f else 0.45f).height(12.dp)
-                        .clip(RoundedCornerShape(7.dp)).background(shimmerBrush()))
-                    Box(Modifier.fillMaxWidth(if (i % 2 == 0) 0.36f else 0.55f).height(10.dp)
-                        .clip(RoundedCornerShape(7.dp)).background(shimmerBrush()))
+                Box(Modifier.size(40.dp).clip(CircleShape).background(shimmerBrush()))
+                Spacer(Modifier.size(11.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    Box(Modifier.fillMaxWidth(if (i % 2 == 0) 0.62f else 0.45f).height(11.dp)
+                        .clip(RoundedCornerShape(6.dp)).background(shimmerBrush()))
+                    Box(Modifier.fillMaxWidth(if (i % 2 == 0) 0.36f else 0.55f).height(9.dp)
+                        .clip(RoundedCornerShape(6.dp)).background(shimmerBrush()))
                 }
             }
         }
@@ -248,9 +214,9 @@ fun shimmerBrush(): Brush {
     val t = rememberInfiniteTransition(label = "shimmer")
     val x by t.animateFloat(0f, 1300f,
         infiniteRepeatable(tween(1200, easing = LinearEasing)), label = "shimmerX")
-    val base = MaterialTheme.colorScheme.surfaceContainerHigh
+    val base = MaterialTheme.colorScheme.surfaceVariant
     return Brush.linearGradient(
-        colors = listOf(base.copy(alpha = 0.55f), base.copy(alpha = 1f), base.copy(alpha = 0.55f)),
+        colors = listOf(base.copy(alpha = 0.5f), base.copy(alpha = 0.95f), base.copy(alpha = 0.5f)),
         start = Offset(x - 340f, 0f),
         end = Offset(x, 230f),
     )
@@ -288,8 +254,23 @@ fun FullLoading(label: String? = null) {
 /** ورود پلکانی و نرم برای بخش‌های صفحه (fade + slide + scale، منحنی پریمیوم). */
 @Composable
 fun FadeSlideIn(index: Int = 0, content: @Composable () -> Unit) {
-    var on by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { delay(45L * index.coerceAtMost(10)); on = true }
+    /*
+     * Plays once per screen visit, then never again.
+     *
+     * Inside a LazyColumn an item is disposed the moment it leaves the viewport
+     * and recreated on the way back, so a plain remember + LaunchedEffect made
+     * the whole entrance replay on every single scroll. The flag is saved, so a
+     * recycled row returns already visible and scrolling stays completely calm.
+     */
+    var played by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var on by remember { mutableStateOf(played) }
+    LaunchedEffect(Unit) {
+        if (!played) {
+            delay(45L * index.coerceAtMost(10))
+            on = true
+            played = true
+        }
+    }
     AnimatedVisibility(
         visible = on,
         enter = fadeIn(tween(380, easing = FastOutSlowInEasing)) +
@@ -308,15 +289,16 @@ fun CountUpText(target: Int, style: androidx.compose.ui.text.TextStyle, color: C
 /** حالت خطای زیبا — ابر قطع اتصال با دکمه تلاش دوباره. هیچ جزئیات فنی نمایش نمی‌دهد. */
 @Composable
 fun ErrorState(message: String, modifier: Modifier = Modifier, onRetry: (() -> Unit)? = null) {
-    val t = rememberInfiniteTransition(label = "err")
+    val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "err")
     val fl by t.animateFloat(-6f, 6f,
-        infiniteRepeatable(tween(1600, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "float")
+        androidx.compose.animation.core.infiniteRepeatable(
+            androidx.compose.animation.core.tween(1600, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+            androidx.compose.animation.core.RepeatMode.Reverse), label = "float")
     Column(modifier.fillMaxWidth().padding(vertical = 34.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
-            Modifier.size(96.dp)
+            Modifier.size(92.dp)
                 .graphicsLayer { translationY = fl }
-                .shadow(16.dp, CircleShape, ambientColor = MaterialTheme.colorScheme.error.copy(alpha = 0.2f))
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh, CircleShape),
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f), CircleShape),
             contentAlignment = Alignment.Center,
         ) { Text("📡", fontSize = 40.sp) }
         Spacer(Modifier.height(14.dp))
@@ -333,7 +315,6 @@ fun ErrorState(message: String, modifier: Modifier = Modifier, onRetry: (() -> U
     }
 }
 
-/** حالت خالی — ایموجی در حباب گرادیانی محو + متن. */
 @Composable
 fun EmptyState(emoji: String, text: String, modifier: Modifier = Modifier) {
     var on by remember { mutableStateOf(false) }
@@ -344,11 +325,7 @@ fun EmptyState(emoji: String, text: String, modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(9.dp),
     ) {
-        Box(
-            Modifier.size(78.dp).clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)),
-            contentAlignment = Alignment.Center,
-        ) { Text(emoji, fontSize = 34.sp) }
+        Text(emoji, fontSize = 42.sp)
         Text(
             text,
             style = MaterialTheme.typography.bodyMedium,
@@ -359,7 +336,7 @@ fun EmptyState(emoji: String, text: String, modifier: Modifier = Modifier) {
 }
 
 private val avatarPalette = listOf(
-    Color(0xFF34E0A1), Color(0xFF38BDF8), Color(0xFFA78BFA), Color(0xFFFB7185),
+    Color(0xFF4ADE9F), Color(0xFF38BDF8), Color(0xFFA78BFA), Color(0xFFFB7185),
     Color(0xFFFBBF24), Color(0xFF2DD4BF), Color(0xFFF472B6), Color(0xFF818CF8),
 )
 
@@ -391,7 +368,7 @@ fun Avatar(username: String, mood: String? = null, size: Dp = 44.dp, online: Boo
                 Modifier
                     .size(size)
                     .align(Alignment.Center)
-                    .background(c.copy(alpha = 0.16f), CircleShape)
+                    .background(c.copy(alpha = 0.2f), CircleShape)
                     .border(1.5.dp, ring, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
@@ -410,36 +387,34 @@ fun Avatar(username: String, mood: String? = null, size: Dp = 44.dp, online: Boo
             )
         }
         if (online != null) {
-            val dotScale by animateFloatAsState(if (online) 1f else 0.8f, DarsMotion.springBouncy(), label = "dot")
             Box(
                 Modifier
-                    .size(12.dp)
+                    .size(11.dp)
                     .align(Alignment.TopEnd)
-                    .graphicsLayer { scaleX = dotScale; scaleY = dotScale }
                     .background(
                         if (online) Color(0xFF22C55E) else MaterialTheme.colorScheme.outline,
                         CircleShape
                     )
-                    .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                    .border(2.dp, MaterialTheme.colorScheme.background, CircleShape)
             )
         }
     }
 }
 
-/** پیل آماری: مقدار درشت + برچسب، با رنگ اکسنت، حاشیهٔ نرم و سایهٔ محو. */
+/** پیل آماری: مقدار درشت + برچسب، با رنگ اکسنت و حاشیهٔ نرم. */
 @Composable
 fun StatPill(value: String, label: String, modifier: Modifier = Modifier, accent: Color = MaterialTheme.colorScheme.primary) {
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.medium,
-        color = accent.copy(alpha = 0.09f),
+        color = accent.copy(alpha = 0.10f),
         border = BorderStroke(1.dp, accent.copy(alpha = 0.22f)),
     ) {
         Column(
-            Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(value, style = MaterialTheme.typography.titleLarge, color = accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(value, style = MaterialTheme.typography.titleMedium, color = accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }

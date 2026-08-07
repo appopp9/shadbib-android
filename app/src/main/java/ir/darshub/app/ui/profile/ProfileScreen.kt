@@ -1,7 +1,6 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 
 package ir.darshub.app.ui.profile
-import androidx.compose.material.icons.filled.Download
 
 import android.Manifest
 import android.os.Build
@@ -39,6 +38,7 @@ import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.VisibilityOff
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
@@ -211,7 +211,7 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(ir.darshub.app.ui.theme.auroraBrush()),
+        modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {

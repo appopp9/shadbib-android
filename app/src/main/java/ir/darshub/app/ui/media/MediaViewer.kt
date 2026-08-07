@@ -1,5 +1,4 @@
 package ir.darshub.app.ui.media
-import androidx.compose.material.icons.filled.Download
 
 import android.view.SurfaceView
 import androidx.compose.animation.core.animateFloatAsState
@@ -27,6 +26,7 @@ import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Replay
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable

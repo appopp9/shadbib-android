@@ -17,7 +17,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -49,11 +52,36 @@ import ir.darshub.app.ui.theme.brandGradient
 
 private data class TopStudier(val rank: Int, val username: String, val minutes: Int, val isMe: Boolean)
 
-private fun medal(rank: Int): String = when (rank) {
-    1 -> "🥇"
-    2 -> "🥈"
-    3 -> "🥉"
-    else -> ""
+private val GoldMedal = Color(0xFFFBBF24)
+private val SilverMedal = Color(0xFFCBD5E1)
+private val BronzeMedal = Color(0xFFD97706)
+
+/**
+ * Rank chip.
+ *
+ * The podium used medal emoji, which render differently on every vendor's font
+ * and looked out of place next to the rest of the card. A solid metal disc with
+ * the number inside is legible at any size and matches the app's own palette.
+ */
+@Composable
+private fun RankBadge(rank: Int) {
+    val metal = when (rank) {
+        1 -> GoldMedal
+        2 -> SilverMedal
+        3 -> BronzeMedal
+        else -> null
+    }
+    Box(Modifier.width(26.dp), contentAlignment = Alignment.Center) {
+        if (metal != null) {
+            Box(Modifier.size(22.dp).background(metal, CircleShape), contentAlignment = Alignment.Center) {
+                Text(rank.fa(), style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Black, color = Color(0xFF1F2937))
+            }
+        } else {
+            Text(rank.fa(), style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
 }
 
 /**
@@ -110,7 +138,8 @@ fun TopStudiersCard(myMinutes: Int, onUser: (String) -> Unit, onSeeAll: () -> Un
 
     AppCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("🏆", fontSize = 20.sp)
+            Icon(Icons.Rounded.EmojiEvents, contentDescription = null,
+                tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(21.dp))
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
                 Text("برترین‌های امروز", style = MaterialTheme.typography.titleSmall)
@@ -146,11 +175,7 @@ fun TopStudiersCard(myMinutes: Int, onUser: (String) -> Unit, onSeeAll: () -> Un
                     ) {
                         Column(Modifier.padding(horizontal = 8.dp, vertical = 7.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(Modifier.width(26.dp), contentAlignment = Alignment.Center) {
-                                    if (r.rank <= 3) Text(medal(r.rank), fontSize = 16.sp)
-                                    else Text(r.rank.fa(), style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
+                                RankBadge(r.rank)
                                 Spacer(Modifier.width(6.dp))
                                 Avatar(r.username, size = 32.dp)
                                 Spacer(Modifier.width(9.dp))

@@ -1,63 +1,94 @@
-شادبیب اندروید v2.3.0 — راهنمای بیلد
+شادبیب اندروید v2.4.0 — راهنمای بیلد
 =====================================
-این سورس کامل و آمادهٔ بیلد است (کی‌استور امضا هم داخلش هست).
+سورس کامل و آمادهٔ بیلد. کی‌استور امضا داخل بسته هست.
 
-روش ۱ — Android Studio (پیشنهادی):
-  1. پوشه را در Android Studio باز کن (Open Project)
-  2. صبر کن Gradle Sync تمام شود
-     (بار اول گریدل 8.7 دانلود می‌شود — اینترنت لازم است)
+پیش‌نیازها
+----------
+  - JDK 17  (اجباری — jvmTarget 17 است. با JDK 21/25 بیلد شکست می‌خورد.)
+  - Android SDK Platform 34
+  - Android Studio Koala یا بالاتر (AGP 8.5.2 / Kotlin 2.0.20 / Gradle 8.7)
+
+روش ۱ — Android Studio (پیشنهادی)
+---------------------------------
+  1. Open Project و همین پوشه را انتخاب کن
+  2. صبر کن Gradle Sync تمام شود (بار اول گریدل ۸.۷ دانلود می‌شود — اینترنت لازم است)
   3. Build → Build Bundle(s)/APK(s) → Build APK(s)
   4. خروجی: app/build/outputs/apk/release/app-release.apk
 
-روش ۲ — خط فرمان:
-  این بسته فایل gradlew و gradle-wrapper.jar ندارد (باینری است).
-  یک‌بار در ریشهٔ پروژه اجرا کن تا ساخته شوند:
+روش ۲ — خط فرمان
+-----------------
+  این بسته gradlew و gradle/wrapper/gradle-wrapper.jar ندارد (فایل باینری است
+  و داخل زیپ متنی جا نمی‌شود). یک‌بار در ریشهٔ پروژه اجرا کن:
+
       gradle wrapper --gradle-version 8.7
+
   بعد از آن:
-      ./gradlew assembleRelease        (ویندوز: gradlew.bat assembleRelease)
-  اگر پروژه را یک‌بار در Android Studio باز کنی، خودش رپر را می‌سازد.
 
-پیش‌نیازها:
-  - JDK 17 (اجباری — jvmTarget 17)
-  - Android SDK Platform 34
-  - Android Studio Koala یا بالاتر (AGP 8.5.2)
+      ./gradlew assembleRelease          (ویندوز: gradlew.bat assembleRelease)
 
-local.properties:
-  عمداً داخل بسته نیست چون مسیر SDK روی سیستم تو فرق دارد.
-  Android Studio خودکار می‌سازدش. برای خط فرمان دستی بساز:
+  اگر پروژه را یک‌بار در Android Studio باز کنی، رپر خودکار ساخته می‌شود و
+  دیگر به این مرحله نیازی نیست.
+
+local.properties
+----------------
+  عمداً داخل بسته نیست چون مسیر SDK روی هر سیستم فرق دارد.
+  Android Studio خودش می‌سازدش. برای خط فرمان دستی بساز:
       sdk.dir=/path/to/Android/Sdk
+  (ویندوز: sdk.dir=C:\\Users\\NAME\\AppData\\Local\\Android\\Sdk)
 
-امضا:
-  خودکار با keystore/shadbib.keystore (تنظیمات داخل app/build.gradle).
-  هر دو بیلد‌تایپ debug و release با همین کلید امضا می‌شوند، پس
-  می‌توانی روی نسخهٔ نصب‌شدهٔ قبلی مستقیم آپدیت کنی.
+امضا
+----
+  خودکار با keystore/darshub.keystore — تنظیماتش داخل app/build.gradle است.
+  هر دو بیلدتایپ debug و release با همین کلید امضا می‌شوند، پس می‌توانی روی
+  نسخهٔ نصب‌شدهٔ قبلی مستقیم آپدیت بزنی بدون حذف برنامه.
 
-نسخه: versionCode 16 — versionName 2.3.0
+نسخه
+----
+  versionCode 25 — versionName 2.4.0
+
+آدرس سرور
+---------
+  در app/src/main/java/ir/darshub/app/core/Api.kt تعریف شده:
+      BASE  = "https://studying.ir/api.php"
+      MEDIA = "https://studying.ir/media.php"
+  (راهنمای نسخهٔ قبل هنوز beautifulrabor.ir را نوشته بود — آن اشتباه بود،
+   کد خودش از قبل روی studying.ir بوده. اینجا اصلاح شد.)
 
 ────────────────────────────────────────────────────────────
-جدید در این نسخه — اتاق مطالعه
+تغییرات این نسخه (۲.۳.۵) — ورود و ثبت‌نام
 ────────────────────────────────────────────────────────────
+سه فایل تغییر کرده، همگی در:
+  app/src/main/java/ir/darshub/app/ui/auth/
 
-فایل‌های جدید:
-  app/src/main/java/ir/shadbib/app/ui/study/room/RoomChars.kt
-  app/src/main/java/ir/shadbib/app/ui/study/room/RoomModels.kt
-  app/src/main/java/ir/shadbib/app/ui/study/room/StudyRoomViewModel.kt
-  app/src/main/java/ir/shadbib/app/ui/study/room/StudyRoomScreen.kt
-  app/src/main/res/drawable-nodpi/  (30 فایل webp — 668 KB)
+1) IranPhone.kt
+   + ltr(text)      — متن را در LRI…PDI یونیکد می‌پیچد تا وسط جملهٔ فارسی
+                      جابه‌جا نشود
+   + maskLtr(raw)   — نسخهٔ چپ‌چین mask()
+   + GROUP_1 / GROUP_2 — نقاط گروه‌بندی 0912 345 6789
 
-فایل‌های تغییریافته:
-  app/src/main/java/ir/shadbib/app/ui/nav/MainScaffold.kt   (۴ خط)
-  app/build.gradle                                          (فقط نسخه)
+2) NeoUi.kt
+   + PhoneDigitsTransformation — گروه‌بندی زندهٔ ارقام هنگام تایپ.
+     مقدار واقعیِ state همان ۱۱ رقم خالص می‌ماند؛ فاصله‌ها فقط نمایشی‌اند و
+     به سرور نمی‌روند.
+   ~ PhoneField — کل ردیف با CompositionLocalProvider روی LayoutDirection.Ltr
+     قفل شد. نکته: صرفاً textAlign = Start کافی نبود، چون در چیدمان RTL خودِ
+     Start یعنی «راست». باید جهت چیدمان عوض می‌شد نه ترازِ متن.
+   ~ NeoOtpBoxes — همین قفل روی جعبه‌های کد هم اعمال شد. در کد قبلی کامنت
+     "Left to right on purpose" بود ولی چون اپ RTL است Row بی‌صدا برعکس
+     می‌شد و اولین رقمِ تایپ‌شده در جعبهٔ سمت راست می‌نشست.
 
-هیچ دپندنسی جدیدی اضافه نشده.
-StudySpaceScreen.kt قدیمی دست نخورده و مثل قبل کار می‌کند.
+3) AuthFlow.kt
+   ~ mask() → maskLtr() در جملهٔ «کد ۶ رقمی را به … فرستادیم»
+   ~ رفتار dev_code: اگر سرور کد آزمایشی برگرداند، حالا خودکار در فیلد پر
+     می‌شود با پیام «پیامک روی سرور خاموش است — کد خودکار پر شد».
+     وقتی SMS_ENABLED روی سرور true شود، dev_code دیگر برنمی‌گردد و این
+     مسیر خودبه‌خود غیرفعال می‌شود — نیازی به بیلد مجدد نیست.
 
-⚠ اتاق مطالعه بدون بک‌اند جدید کار نمی‌کند.
-  بستهٔ shadbib_backend_room.zip را ببین — یک فایل SQL باید اجرا شود
-  و api.php روی هاست جایگزین شود. تا اون موقع تب «اتاق» باز می‌شود
-  ولی خطای شبکه می‌دهد و کسی را نشان نمی‌دهد.
+هیچ دپندنسی جدیدی اضافه نشده. AuthScreen.kt و core/Api.kt دست‌نخورده‌اند،
+پس MainActivity و بقیهٔ صفحه‌ها تغییری نمی‌خواهند.
 
-آدرس سرور در core/Api.kt تعریف شده و دست نخورده:
-  BASE = "https://beautifulrabor.ir/shadbib/api.php"
+⚠ یادآوری سمت سرور
+  «حالت آزمایشی» یک سوییچ سرور است نه باگ اپ. تا وقتی در config.php مقدار
+  SMS_ENABLED برابر false باشد، otp.php کد را در فیلد dev_code برمی‌گرداند.
 
 لیست کامل تغییرات نسخه‌های قبل: CHANGELOG.md

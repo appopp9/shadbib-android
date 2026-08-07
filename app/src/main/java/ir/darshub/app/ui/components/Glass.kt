@@ -31,7 +31,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -40,9 +39,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import ir.darshub.app.ui.theme.DarsMotion
 
-/** منوی شیشه‌ای تلگرامی: کارت نیمه‌شفاف با حاشیه نور، سایهٔ رنگی و ورود فنری. */
+/** منوی شیشه‌ای تلگرامی: کارت نیمه‌شفاف با حاشیه نور و ورود فنری. */
 @Composable
 fun GlassMenu(onDismiss: () -> Unit, content: @Composable ColumnScopeGlass.() -> Unit) {
     var on by remember { mutableStateOf(false) }
@@ -52,17 +50,11 @@ fun GlassMenu(onDismiss: () -> Unit, content: @Composable ColumnScopeGlass.() ->
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(Modifier.graphicsLayer { scaleX = scale; scaleY = scale; this.alpha = alpha }) {
             Surface(
-                shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f),
+                shape = RoundedCornerShape(26.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
                 border = BorderStroke(1.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.35f), Color.White.copy(alpha = 0.06f)))),
-                shadowElevation = 0.dp,
-                modifier = Modifier
-                    .widthIn(min = 250.dp, max = 320.dp)
-                    .shadow(
-                        22.dp, RoundedCornerShape(28.dp),
-                        ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-                        spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                    ),
+                shadowElevation = 18.dp,
+                modifier = Modifier.widthIn(min = 250.dp, max = 320.dp),
             ) {
                 Column(Modifier.padding(vertical = 8.dp)) { ColumnScopeGlass(onDismiss).content() }
             }
@@ -72,17 +64,12 @@ fun GlassMenu(onDismiss: () -> Unit, content: @Composable ColumnScopeGlass.() ->
 
 class ColumnScopeGlass(val dismiss: () -> Unit)
 
-/** آیتم منوی شیشه‌ای با بازخورد لمس. */
+/** آیتم منوی شیشه‌ای. */
 @Composable
 fun ColumnScopeGlass.GlassAction(icon: ImageVector, label: String, danger: Boolean = false, onClick: () -> Unit) {
     val tint = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-    val src = remember { MutableInteractionSource() }
-    val pressed by src.collectIsPressedAsState()
-    val bg by androidx.compose.animation.animateColorAsState(
-        if (pressed) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f) else Color.Transparent,
-        DarsMotion.inOut(DarsMotion.Fast), label = "actBg")
-    Surface(color = bg, onClick = { onClick(); dismiss() }, interactionSource = src, modifier = Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(horizontal = 18.dp, vertical = 13.dp), verticalAlignment = Alignment.CenterVertically) {
+    Surface(color = Color.Transparent, onClick = { onClick(); dismiss() }, modifier = Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(horizontal = 18.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, null, tint = tint.copy(alpha = 0.85f), modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(14.dp))
             Text(label, style = MaterialTheme.typography.bodyLarge, color = tint)
@@ -104,22 +91,22 @@ fun ColumnScopeGlass.GlassReactions(mineEmoji: String?, onPick: (String) -> Unit
                 listOf("❤️", "👍", "👎", "😂", "🔥", "🍓"),
                 listOf("🍌", "🖕", "😢", "🤯", "💯", "🙏"),
             ).forEach { emojis ->
-                Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                    emojis.forEach { em ->
-                        val src = remember { MutableInteractionSource() }
-                        val pressed by src.collectIsPressedAsState()
-                        val sc by animateFloatAsState(if (pressed) 1.45f else if (mineEmoji == em) 1.15f else 1f,
-                            spring(dampingRatio = 0.4f, stiffness = 600f), label = "emScale")
-                        Surface(
-                            shape = CircleShape,
-                            color = if (mineEmoji == em) MaterialTheme.colorScheme.primary.copy(alpha = 0.25f) else Color.Transparent,
-                            onClick = { onPick(em); dismiss() },
-                            interactionSource = src,
-                        ) {
-                            Text(em, fontSize = 23.sp, modifier = Modifier.padding(5.dp).graphicsLayer { scaleX = sc; scaleY = sc })
-                        }
-                    }
+        Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically, ) {
+            emojis.forEach { em ->
+                val src = remember { MutableInteractionSource() }
+                val pressed by src.collectIsPressedAsState()
+                val sc by animateFloatAsState(if (pressed) 1.45f else if (mineEmoji == em) 1.15f else 1f,
+                    spring(dampingRatio = 0.4f, stiffness = 600f), label = "emScale")
+                Surface(
+                    shape = CircleShape,
+                    color = if (mineEmoji == em) MaterialTheme.colorScheme.primary.copy(alpha = 0.25f) else Color.Transparent,
+                    onClick = { onPick(em); dismiss() },
+                    interactionSource = src,
+                ) {
+                    Text(em, fontSize = 23.sp, modifier = Modifier.padding(5.dp).graphicsLayer { scaleX = sc; scaleY = sc })
                 }
+            }
+        }
             }
         }
     }

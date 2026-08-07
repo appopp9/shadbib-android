@@ -121,7 +121,6 @@ import ir.darshub.app.ui.components.GlassMenu
 import ir.darshub.app.ui.components.LoadingBox
 import ir.darshub.app.ui.components.SegmentedTabs
 import ir.darshub.app.ui.library.fileNameOf
-import ir.darshub.app.ui.theme.auroraBrush
 import ir.darshub.app.ui.media.MediaViewer
 import ir.darshub.app.ui.messages.AudioBubble
 import ir.darshub.app.ui.messages.ChatMedia
@@ -385,7 +384,7 @@ private fun FeedHome(vm: FeedViewModel, onOpenPost: (Int) -> Unit, onOpenUser: (
         scopeRf.launch { kotlinx.coroutines.delay(900); refreshing = false }
     })
 
-    Box(Modifier.fillMaxSize().background(ir.darshub.app.ui.theme.auroraBrush()).pullRefresh(pullState)) {
+    Box(Modifier.fillMaxSize().pullRefresh(pullState)) {
         Column(Modifier.fillMaxSize()) {
             // هدر + جستجو (جایگزین بخش دوستان)
             Column(Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {

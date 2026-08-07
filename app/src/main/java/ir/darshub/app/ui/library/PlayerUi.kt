@@ -2,20 +2,10 @@
 
 package ir.darshub.app.ui.library
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.StartOffset
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,7 +33,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -58,9 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -70,9 +57,7 @@ import ir.darshub.app.core.Api
 import ir.darshub.app.core.fa
 import ir.darshub.app.data.MusicTrack
 import ir.darshub.app.player.PlayerHolder
-import ir.darshub.app.ui.theme.DarsMotion
 import ir.darshub.app.ui.theme.brandGradient
-import ir.darshub.app.ui.theme.pressScale
 import java.util.Locale
 import kotlinx.coroutines.delay
 
@@ -104,28 +89,6 @@ fun TrackCover(track: MusicTrack?, size: androidx.compose.ui.unit.Dp, corner: an
     }
 }
 
-/** چهار میلهٔ اکولایزر فنری — فقط وقتی پخش فعال است. */
-@Composable
-private fun EqualizerBars(active: Boolean, tint: Color) {
-    val t = rememberInfiniteTransition(label = "eq")
-    val h1 by t.animateFloat(0.4f, 1f, infiniteRepeatable(tween(520, easing = FastOutSlowInEasing), RepeatMode.Reverse), label = "eq1")
-    val h2 by t.animateFloat(0.9f, 0.35f, infiniteRepeatable(tween(420, easing = FastOutSlowInEasing), RepeatMode.Reverse, StartOffset(120)), label = "eq2")
-    val h3 by t.animateFloat(0.5f, 1f, infiniteRepeatable(tween(640, easing = FastOutSlowInEasing), RepeatMode.Reverse, StartOffset(240)), label = "eq3")
-    val h4 by t.animateFloat(1f, 0.45f, infiniteRepeatable(tween(380, easing = FastOutSlowInEasing), RepeatMode.Reverse, StartOffset(60)), label = "eq4")
-    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(2.5.dp)) {
-        listOf(h1, h2, h3, h4).forEach { h ->
-            Box(
-                Modifier
-                    .width(3.dp)
-                    .height(12.dp)
-                    .graphicsLayer { scaleY = if (active) h else 0.35f }
-                    .background(tint.copy(alpha = if (active) 0.9f else 0.35f), CircleShape)
-            )
-        }
-    }
-}
-
-/** مینی‌پلیر شناور ۲۰۲۶: شیشه، سایهٔ رنگی، دکمهٔ گرادیانی و اکولایزر زنده. */
 @Composable
 fun MiniPlayer() {
     val queue by PlayerHolder.queue.collectAsState()
@@ -135,18 +98,11 @@ fun MiniPlayer() {
     var showFull by remember { mutableStateOf(false) }
 
     Surface(
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
-        shadowElevation = 0.dp,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 14.dp, vertical = 4.dp)
-            .shadow(
-                14.dp, RoundedCornerShape(24.dp),
-                ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
-                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
-            ),
+        color = MaterialTheme.colorScheme.surface,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
+        shadowElevation = 8.dp,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 4.dp),
     ) {
         Row(
             Modifier
@@ -171,36 +127,31 @@ fun MiniPlayer() {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            EqualizerBars(isPlaying, MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.width(10.dp))
-            val playInter = remember { MutableInteractionSource() }
-            Surface(
-                shape = CircleShape,
-                color = Color.Transparent,
-                onClick = { PlayerHolder.toggle() },
-                interactionSource = playInter,
-                modifier = Modifier
-                    .size(40.dp)
-                    .pressScale(playInter, pressedScale = 0.88f)
-                    .shadow(
-                        8.dp, CircleShape,
-                        ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
-                        spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                    ),
-            ) {
-                Box(Modifier.background(brandGradient()), contentAlignment = Alignment.Center) {
+            IconButton(onClick = { PlayerHolder.prev() }) {
+                Icon(Icons.Rounded.SkipPrevious, contentDescription = "قبلی")
+            }
+            Surface(shape = CircleShape, color = androidx.compose.ui.graphics.Color.Transparent, onClick = { PlayerHolder.toggle() }) {
+                Box(Modifier.background(brandGradient())) {
                     Icon(
                         if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                         contentDescription = "پخش/توقف",
                         tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(22.dp),
+                        modifier = Modifier.padding(8.dp).size(22.dp),
                     )
                 }
+            }
+            IconButton(onClick = { PlayerHolder.next() }) {
+                Icon(Icons.Rounded.SkipNext, contentDescription = "بعدی")
+            }
+            IconButton(onClick = { PlayerHolder.stopAndClear() }) {
+                Icon(Icons.Rounded.Close, contentDescription = "بستن", modifier = Modifier.size(18.dp))
             }
         }
     }
 
-    if (showFull) FullPlayerSheet(onDismiss = { showFull = false })
+    if (showFull) {
+        FullPlayerSheet(onDismiss = { showFull = false })
+    }
 }
 
 private fun fmtMs(ms: Long): String {
@@ -211,7 +162,6 @@ private fun fmtMs(ms: Long): String {
     return String.format(Locale.US, "%d:%02d", m, s).fa()
 }
 
-/** پلیر کامل: کاور بزرگ با هاله، کنترل‌ها و اسلایدر گرادیانی. */
 @Composable
 fun FullPlayerSheet(onDismiss: () -> Unit) {
     val queue by PlayerHolder.queue.collectAsState()
@@ -240,23 +190,7 @@ fun FullPlayerSheet(onDismiss: () -> Unit) {
                 .padding(bottom = 34.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box {
-                TrackCover(track, 230.dp, corner = 30.dp)
-                Box(
-                    Modifier
-                        .size(230.dp)
-                        .graphicsLayer { alpha = if (isPlaying) 0.5f else 0.15f }
-                        .background(
-                            androidx.compose.ui.graphics.Brush.radialGradient(
-                                listOf(
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
-                                    androidx.compose.ui.graphics.Color.Transparent,
-                                )
-                            ),
-                            RoundedCornerShape(30.dp),
-                        )
-                )
-            }
+            TrackCover(track, 230.dp, corner = 30.dp)
             Spacer(Modifier.height(18.dp))
             Text(
                 track?.title ?: "",
@@ -279,10 +213,6 @@ fun FullPlayerSheet(onDismiss: () -> Unit) {
                 value = if (dur > 0) (pos.toFloat() / dur).coerceIn(0f, 1f) else 0f,
                 onValueChange = { f -> if (dur > 0) PlayerHolder.seekTo((f * dur).toLong()) },
                 modifier = Modifier.fillMaxWidth(),
-                colors = SliderDefaults.colors(
-                    thumbColor = MaterialTheme.colorScheme.primary,
-                    activeTrackColor = MaterialTheme.colorScheme.primary,
-                ),
             )
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(fmtMs(pos), style = MaterialTheme.typography.labelSmall)
@@ -303,22 +233,13 @@ fun FullPlayerSheet(onDismiss: () -> Unit) {
                 IconButton(onClick = { PlayerHolder.next() }) {
                     Icon(Icons.Rounded.SkipNext, contentDescription = "بعدی", modifier = Modifier.size(34.dp))
                 }
-                val playInter = remember { MutableInteractionSource() }
                 Surface(
                     shape = CircleShape,
-                    color = Color.Transparent,
-                    shadowElevation = 0.dp,
+                    color = androidx.compose.ui.graphics.Color.Transparent,
+                    shadowElevation = 10.dp,
                     onClick = { PlayerHolder.toggle() },
-                    interactionSource = playInter,
-                    modifier = Modifier
-                        .pressScale(playInter, pressedScale = 0.9f)
-                        .shadow(
-                            16.dp, CircleShape,
-                            ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
-                            spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                        ),
                 ) {
-                    Box(Modifier.background(brandGradient())) {
+                    Box(Modifier.background(ir.darshub.app.ui.theme.brandGradient())) {
                         Icon(
                             if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                             contentDescription = "پخش/توقف",

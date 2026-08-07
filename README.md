@@ -32,11 +32,11 @@
 | ذخیره‌سازی | DataStore Preferences |
 | ناوبری | Navigation Compose |
 
-آدرس API در فایل `app/src/main/java/ir/shadbib/app/core/Api.kt` تنظیم شده:
+آدرس API در فایل `app/src/main/java/ir/darshub/app/core/Api.kt` تنظیم شده:
 
 ```kotlin
-const val BASE = "https://beautifulrabor.ir/shadbib/api.php"
-const val MEDIA_BASE = "https://beautifulrabor.ir/shadbib/"
+const val BASE = "https://studying.ir/api.php"
+const val MEDIA_BASE = "https://studying.ir/"
 ```
 
 اگه دامنه رو عوض کردی فقط همین دو خط رو تغییر بده.
@@ -55,17 +55,17 @@ const val MEDIA_BASE = "https://beautifulrabor.ir/shadbib/"
 
 ### 🔑 امضا (Keystore)
 
-فایل keystore در مسیر `keystore/shadbib.keystore` قرار داره:
+فایل keystore در مسیر `keystore/darshub.keystore` قرار داره:
 
-- **Store/Key password:** `shadbib2026`
-- **Alias:** `shadbib`
+- **Store/Key password:** `darshub2026`
+- **Alias:** `darshub`
 
 ⚠️ این فایل رو گم نکن — برای انتشار آپدیت‌های بعدی (نصب روی نسخه قبلی) باید APK با همین keystore امضا بشه. برای انتشار عمومی بهتره پسورد رو عوض کنی و keystore شخصی خودت رو بسازی.
 
 ## 📁 ساختار پروژه
 
 ```
-app/src/main/java/ir/shadbib/app/
+app/src/main/java/ir/darshub/app/
 ├── core/        # Api، Store (توکن/تایمر)، تاریخ جلالی و فرمت فارسی
 ├── data/        # مدل‌های داده و پارس JSON
 ├── player/      # سرویس پخش موزیک (Media3)

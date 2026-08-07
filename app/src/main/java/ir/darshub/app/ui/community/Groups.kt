@@ -1,7 +1,6 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 
 package ir.darshub.app.ui.community
-import androidx.compose.material.icons.filled.Download
 
 import android.content.Context
 import android.net.Uri
@@ -47,6 +46,7 @@ import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PersonRemove
 import androidx.compose.material.icons.rounded.Reply
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon

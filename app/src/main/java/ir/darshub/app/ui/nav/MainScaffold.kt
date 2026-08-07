@@ -9,23 +9,19 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -38,6 +34,8 @@ import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.TaskAlt
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -54,14 +52,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -82,17 +77,19 @@ import ir.darshub.app.ui.profile.ProfileScreen
 import ir.darshub.app.ui.study.StudySpaceDialog
 import ir.darshub.app.ui.study.room.StudyRoomScreen
 import ir.darshub.app.ui.tasks.TasksScreen
-import ir.darshub.app.ui.theme.DarsMotion
 import ir.darshub.app.ui.theme.brandGradient
-import ir.darshub.app.ui.theme.pressScale
 import kotlinx.coroutines.delay
 import java.util.Locale
 
 private data class Tab(val route: String, val label: String, val icon: ImageVector)
 
 /*
- * چهار تب اصلی در نوار شناور ۲۰۲۶. تسک‌ها، انجمن و کتابخانه از گرید
- * میان‌برهای خانه در دسترس‌اند (یک لمس، با برچسب و سطح لمس راحت).
+ * Only four tabs now.
+ *
+ * Seven pills in one bar left every target under the 48.dp touch minimum and
+ * the labels never had room to appear. Tasks, community and library are
+ * one tap away from the Home shortcut grid instead, where they get a real
+ * label and a comfortable hit area.
  */
 private val tabs = listOf(
     Tab("home", "خانه", Icons.Rounded.Home),
@@ -191,13 +188,12 @@ fun MainScaffold() {
             NavHost(
                 navController = nav, startDestination = "home",
                 enterTransition = {
-                    fadeIn(tween(DarsMotion.Medium, easing = DarsMotion.Emphasized)) +
-                            slideInVertically(tween(DarsMotion.Medium, easing = DarsMotion.Emphasized)) { it / 26 } +
-                            scaleIn(tween(DarsMotion.Medium, easing = DarsMotion.Emphasized), initialScale = 0.985f)
+                    fadeIn(tween(260, easing = FastOutSlowInEasing)) +
+                            slideInVertically(tween(260, easing = FastOutSlowInEasing)) { it / 24 }
                 },
-                exitTransition = { fadeOut(tween(DarsMotion.Fast)) },
-                popEnterTransition = { fadeIn(tween(DarsMotion.Medium, easing = DarsMotion.Emphasized)) },
-                popExitTransition = { fadeOut(tween(DarsMotion.Fast)) },
+                exitTransition = { fadeOut(tween(150)) },
+                popEnterTransition = { fadeIn(tween(240)) },
+                popExitTransition = { fadeOut(tween(150)) },
             ) {
                 composable("home") { HomeScreen() }
                 composable("messages") { MessagesScreen() }
@@ -217,107 +213,79 @@ fun MainScaffold() {
     if (openStudy) StudySpaceDialog(onClose = { NavBus.consumeStudy() })
 }
 
-/** نوار ناوبری قرصی شناور ۲۰۲۶ — شیشه با نشانگر گرادیانی لغزان فنری. */
+/** نوار ناوبری قرصی شناور — امضای بازطراحی «شب مطالعه». */
 @Composable
 private fun FloatingNavBar(currentRoute: String?, unread: Int, onSelect: (String) -> Unit) {
-    val cs = MaterialTheme.colorScheme
-    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 14.dp, vertical = 10.dp)
-            .height(68.dp)
-            .shadow(
-                20.dp, CircleShape,
-                ambientColor = cs.primary.copy(alpha = 0.18f),
-                spotColor = cs.primary.copy(alpha = 0.24f),
-            ),
+            .height(66.dp),
         shape = CircleShape,
-        color = cs.surfaceContainer.copy(alpha = 0.92f),
-        border = BorderStroke(1.dp, BrushBorder()),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
+        shadowElevation = 16.dp,
     ) {
-        BoxWithConstraints(Modifier.fillMaxSize()) {
-            val itemW = maxWidth / tabs.size
-            val selectedIdx = tabs.indexOfFirst { it.route == currentRoute }.coerceAtLeast(0)
-            val sign = if (rtl) -1f else 1f
-            val pillX by androidx.compose.animation.core.animateDpAsState(
-                itemW * selectedIdx * sign, DarsMotion.springBouncy(), label = "navPill")
-            Box(
-                Modifier
-                    .padding(5.dp)
-                    .offset(x = pillX)
-                    .width(itemW - 10.dp)
-                    .height(58.dp)
-                    .clip(CircleShape)
-                    .background(brandGradient())
-                    .shadow(10.dp, CircleShape,
-                        ambientColor = cs.primary.copy(alpha = 0.35f),
-                        spotColor = cs.primary.copy(alpha = 0.4f)),
-            )
-            Row(Modifier.fillMaxSize()) {
-                tabs.forEach { tab ->
-                    NavPill(
-                        tab = tab,
-                        selected = currentRoute == tab.route,
-                        badge = if (tab.route == "messages") unread else 0,
-                        modifier = Modifier.weight(1f),
-                    ) { onSelect(tab.route) }
-                }
+        Row(
+            Modifier.padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            tabs.forEach { tab ->
+                NavPill(
+                    tab = tab,
+                    selected = currentRoute == tab.route,
+                    badge = if (tab.route == "messages") unread else 0,
+                    modifier = Modifier.weight(if (currentRoute == tab.route) 1.45f else 1f),
+                ) { onSelect(tab.route) }
             }
         }
     }
 }
 
-private fun BrushBorder() = androidx.compose.ui.graphics.Brush.linearGradient(
-    listOf(Color.White.copy(alpha = 0.4f), Color.White.copy(alpha = 0.08f)))
-
 @Composable
 private fun NavPill(tab: Tab, selected: Boolean, badge: Int, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val haptic = LocalHapticFeedback.current
-    val interaction = remember { MutableInteractionSource() }
+    val bg by animateColorAsState(
+        if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else Color.Transparent,
+        tween(280), label = "navBg")
     val fg by animateColorAsState(
-        if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-        tween(DarsMotion.Fast), label = "navFg")
-    val iconScale by animateFloatAsState(
-        if (selected) 1.12f else 1f,
-        DarsMotion.springBouncy(), label = "navIconScale")
+        if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        tween(280), label = "navFg")
+    val scale by animateFloatAsState(
+        if (selected) 1.08f else 1f,
+        spring(dampingRatio = 0.5f, stiffness = 480f), label = "navScale")
     Box(
         modifier
-            .padding(horizontal = 3.dp, vertical = 5.dp)
+            .padding(horizontal = 3.dp)
             .clip(CircleShape)
-            .pressScale(interaction, pressedScale = 0.92f)
-            .clickable(interaction, indication = null) {
+            .background(bg)
+            .clickable(remember { MutableInteractionSource() }, indication = null) {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove); onClick()
-            },
+            }
+            .padding(vertical = 9.dp),
         contentAlignment = Alignment.Center,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.graphicsLayer { scaleX = iconScale; scaleY = iconScale }) {
-                Icon(tab.icon, contentDescription = tab.label, tint = fg, modifier = Modifier.size(24.dp))
+            Box(Modifier.graphicsLayer { scaleX = scale; scaleY = scale }) {
+                Icon(tab.icon, contentDescription = tab.label, tint = fg, modifier = Modifier.size(23.dp))
             }
             AnimatedVisibility(
                 visible = selected,
-                enter = expandHorizontally(tween(DarsMotion.Base, easing = DarsMotion.Emphasized)) + fadeIn(tween(DarsMotion.Base)),
-                exit = shrinkHorizontally(tween(DarsMotion.Fast)) + fadeOut(tween(DarsMotion.Fast)),
+                enter = expandHorizontally(tween(260)) + fadeIn(tween(300)),
+                exit = shrinkHorizontally(tween(200)) + fadeOut(tween(140)),
             ) {
                 Row {
                     Spacer(Modifier.width(6.dp))
                     Text(tab.label, style = MaterialTheme.typography.labelMedium, color = fg, maxLines = 1)
                 }
             }
-            // بج نخوانده — با ورود فنری، بدون روی‌هم‌افتادگی با متن
+            // بج نخوانده — کنار آیتم، بدون روی‌هم‌افتادگی با متن
             if (badge > 0) {
                 Spacer(Modifier.width(4.dp))
-                AnimatedVisibility(
-                    visible = true,
-                    enter = scaleIn(DarsMotion.springBouncy(), initialScale = 0.4f) + fadeIn(tween(DarsMotion.Fast)),
-                ) {
-                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.error,
-                        shadowElevation = 4.dp) {
-                        Text(if (badge > 99) "+۹۹" else badge.fa(), color = MaterialTheme.colorScheme.onError,
-                            style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
-                    }
+                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.error) {
+                    Text(if (badge > 99) "+۹۹" else badge.fa(), color = MaterialTheme.colorScheme.onError,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp))
                 }
             }
         }
@@ -339,27 +307,13 @@ private fun StudyFloatingBar(modifier: Modifier = Modifier, onClick: () -> Unit)
         }
     }
     val haptic = LocalHapticFeedback.current
-    AnimatedVisibility(
-        visible = label != null,
-        modifier = modifier,
-        enter = scaleIn(DarsMotion.springBouncy(), initialScale = 0.6f) + fadeIn(tween(DarsMotion.Fast)),
-        exit = fadeOut(tween(DarsMotion.Fast)),
-    ) {
-        Surface(
-            shape = CircleShape, color = Color.Transparent,
-            modifier = Modifier.shadow(
-                14.dp, CircleShape,
-                ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
-            ),
-        ) {
-            val interaction = remember { MutableInteractionSource() }
+    AnimatedVisibility(visible = label != null, modifier = modifier) {
+        Surface(shape = CircleShape, color = Color.Transparent, shadowElevation = 10.dp) {
             Row(
                 Modifier
                     .clip(CircleShape)
                     .background(brandGradient())
-                    .pressScale(interaction, pressedScale = 0.94f)
-                    .clickable(interaction, indication = null) {
+                    .clickable(remember { MutableInteractionSource() }, indication = null) {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove); onClick()
                     }
                     .padding(horizontal = 18.dp, vertical = 11.dp),

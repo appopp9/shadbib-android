@@ -14,16 +14,25 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import kotlin.math.cos
+import kotlin.math.sin
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -67,23 +76,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -98,19 +99,12 @@ import ir.darshub.app.player.AmbientMixer
 import ir.darshub.app.player.Chrono
 import ir.darshub.app.player.PlayerHolder
 import ir.darshub.app.player.Pomodoro
-import ir.darshub.app.ui.theme.DarsMotion
-import ir.darshub.app.ui.theme.pressScale
 import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.cos
-import kotlin.math.sin
 
-/* رنگ‌های فضای تمرکز ۲۰۲۶ — نیمه‌شبِ عمیق با شفق نعنایی/آبی */
-private val FocusBg = Brush.radialGradient(
-    listOf(Color(0xFF0F1F17), Color(0xFF0B100E), Color(0xFF081018)),
-    center = Offset(300f, 200f), radius = 900f,
-)
+/* رنگ‌های فضای تمرکز — هماهنگ با پالت «شب مطالعه» */
+private val FocusBg = Brush.verticalGradient(listOf(Color(0xFF0B100E), Color(0xFF12241C), Color(0xFF0A121A)))
 private val FocusMint = Color(0xFF4ADE9F)
 private val FocusCyan = Color(0xFF38BDF8)
 private val FocusInk = Color(0xFF06110C)
@@ -139,25 +133,19 @@ private fun StudySpaceContent(onClose: () -> Unit, vm: StudyViewModel) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             item {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onClose) { Icon(Icons.Filled.Close, "بستن", tint = Color.White.copy(alpha = 0.85f)) }
+                    IconButton(onClick = onClose) { Icon(Icons.Filled.Close, "بستن", tint = Color.White) }
                     Spacer(Modifier.weight(1f))
                     Text("فضای مطالعه", color = Color.White, style = MaterialTheme.typography.titleLarge)
                     Spacer(Modifier.weight(1f))
-                    val musicInter = remember { MutableInteractionSource() }
-                    IconButton(onClick = { showMusic = true }, modifier = Modifier.pressScale(musicInter, pressedScale = 0.88f), interactionSource = musicInter) {
-                        Icon(Icons.Rounded.LibraryMusic, "موسیقی", tint = Color.White.copy(alpha = 0.85f))
-                    }
+                    IconButton(onClick = { showMusic = true }) { Icon(Icons.Rounded.LibraryMusic, "موسیقی", tint = Color.White) }
                 }
             }
 
             // mode toggle
             item {
                 Spacer(Modifier.height(8.dp))
-                Surface(
-                    shape = CircleShape, color = Color.White.copy(alpha = 0.07f),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.09f)),
-                    shadowElevation = 0.dp,
-                ) {
+                Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.07f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.09f))) {
                     Row(Modifier.padding(4.dp)) {
                         SegBtn("کرنومتر", mode == 0) { mode = 0; Store.setLastStudyMode(0) }
                         SegBtn("پومودورو", mode == 1) { mode = 1; Store.setLastStudyMode(1) }
@@ -411,36 +399,37 @@ private fun clockHms(totalSec: Long): String {
     val h = totalSec / 3600; val m = (totalSec % 3600) / 60; val s = totalSec % 60
     return String.format(Locale.US, "%02d:%02d:%02d", h, m, s).fa()
 }
-
 private fun clockMs(totalSec: Int): String = String.format(Locale.US, "%02d:%02d", totalSec / 60, totalSec % 60).fa()
 
-/** دکمهٔ سگمنت حالت: قرص گرادیانی وقتی انتخاب شده. */
 @Composable
 private fun SegBtn(text: String, selected: Boolean, onClick: () -> Unit) {
-    val interaction = remember { MutableInteractionSource() }
-    Surface(
-        shape = CircleShape,
-        color = if (selected) FocusMint else Color.White.copy(alpha = 0.06f),
-        onClick = onClick,
-        interactionSource = interaction,
-        modifier = Modifier.pressScale(interaction, pressedScale = 0.95f),
-    ) {
-        Text(
-            text,
-            color = if (selected) FocusInk else Color.White.copy(alpha = 0.72f),
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = if (selected) FontWeight.Black else FontWeight.Medium,
-            modifier = Modifier.padding(horizontal = 26.dp, vertical = 10.dp),
-        )
+    val scale by animateFloatAsState(
+        if (selected) 1f else 0.96f,
+        spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "seg",
+    )
+    Surface(shape = CircleShape, color = Color.Transparent, onClick = onClick, modifier = Modifier.scale(scale)) {
+        Box(
+            Modifier
+                .clip(CircleShape)
+                .background(if (selected) FocusGrad else Brush.linearGradient(listOf(Color.White.copy(alpha = 0.06f), Color.White.copy(alpha = 0.06f)))),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text,
+                color = if (selected) FocusInk else Color.White.copy(alpha = 0.72f),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (selected) FontWeight.Black else FontWeight.Medium,
+                modifier = Modifier.padding(horizontal = 26.dp, vertical = 10.dp),
+            )
+        }
     }
 }
 
 @Composable
 private fun CourseChip(text: String, selected: Boolean, onClick: () -> Unit) {
-    val interaction = remember { MutableInteractionSource() }
-    Surface(shape = CircleShape, color = Color.Transparent, onClick = onClick, interactionSource = interaction,
-        border = if (!selected) BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)) else null,
-        modifier = Modifier.pressScale(interaction, pressedScale = 0.95f)) {
+    Surface(shape = CircleShape, color = Color.Transparent, onClick = onClick,
+        border = if (!selected) androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)) else null) {
         Box(Modifier.clip(CircleShape).background(if (selected) FocusGrad else Brush.linearGradient(listOf(Color.White.copy(alpha = 0.08f), Color.White.copy(alpha = 0.08f))))) {
             Text(text, color = if (selected) FocusInk else Color.White, style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(horizontal = 15.dp, vertical = 9.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -475,7 +464,8 @@ private fun PresetChip(text: String, selected: Boolean, onClick: () -> Unit) {
 /**
  * The button the whole screen exists for.
  *
- * While armed, a light sweep travels across it so the eye is pulled there the
+ * It used to be a flat gradient box with no reaction to touch at all. Now, while
+ * it is armed, a light sweep travels across it so the eye is pulled there the
  * moment enough minutes have accumulated; pressing springs it inward with a
  * haptic tick, and the drop shadow fades in and out with the enabled state.
  */
@@ -505,17 +495,12 @@ private fun LogButton(enabled: Boolean, text: String, onClick: () -> Unit) {
         enabled = enabled,
         shape = RoundedCornerShape(22.dp),
         color = Color.Transparent,
-        shadowElevation = 0.dp,
+        shadowElevation = (14f * glow).dp,
         interactionSource = interaction,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp)
-            .scale(scale)
-            .shadow(
-                (16f * glow).dp, RoundedCornerShape(22.dp),
-                ambientColor = FocusMint.copy(alpha = 0.4f * glow),
-                spotColor = FocusCyan.copy(alpha = 0.45f * glow),
-            ),
+            .scale(scale),
     ) {
         Box(
             Modifier
@@ -553,20 +538,13 @@ private fun LogButton(enabled: Boolean, text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun CircleCtl(icon: ImageVector, desc: String, size: Dp, bg: Color, fg: Color, onClick: () -> Unit) {
-    val interaction = remember { MutableInteractionSource() }
-    Surface(
-        shape = CircleShape, color = bg, onClick = onClick, modifier = Modifier.size(size),
-        interactionSource = interaction,
-    ) {
-        Box(
-            Modifier.fillMaxSize().pressScale(interaction, pressedScale = 0.88f),
-            contentAlignment = Alignment.Center,
-        ) { Icon(icon, desc, tint = fg, modifier = Modifier.size(size * 0.42f)) }
+private fun CircleCtl(icon: androidx.compose.ui.graphics.vector.ImageVector, desc: String, size: androidx.compose.ui.unit.Dp, bg: Color, fg: Color, onClick: () -> Unit) {
+    Surface(shape = CircleShape, color = bg, onClick = onClick, modifier = Modifier.size(size)) {
+        Box(contentAlignment = Alignment.Center) { Icon(icon, desc, tint = fg, modifier = Modifier.size(size * 0.42f)) }
     }
 }
 
-/** دکمهٔ اصلی گرادیانی تایمر (پخش/توقف) با هالهٔ نرم. */
+/** دکمهٔ اصلی گرادیانی تایمر (پخش/توقف). */
 @Composable
 private fun GradCtl(icon: ImageVector, desc: String, box: Dp, active: Boolean = false, onClick: () -> Unit) {
     val haptic = LocalHapticFeedback.current
@@ -575,67 +553,64 @@ private fun GradCtl(icon: ImageVector, desc: String, box: Dp, active: Boolean = 
     val scale by animateFloatAsState(
         if (pressed) 0.90f else 1f,
         spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
-        label = "gradScale",
+        label = "ctlScale",
     )
-    Surface(
-        shape = CircleShape,
-        color = Color.Transparent,
-        onClick = {
-            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-            onClick()
-        },
-        interactionSource = interaction,
-        modifier = Modifier
-            .size(box)
-            .scale(scale)
-            .shadow(
-                18.dp, CircleShape,
-                ambientColor = FocusMint.copy(alpha = 0.5f),
-                spotColor = FocusCyan.copy(alpha = 0.55f),
-            ),
-    ) {
-        Box(Modifier.background(FocusGrad), contentAlignment = Alignment.Center) {
-            Icon(icon, desc, tint = FocusInk, modifier = Modifier.size(box * 0.42f))
+    val inf = rememberInfiniteTransition(label = "ctlHalo")
+    val halo by inf.animateFloat(
+        1.04f, if (active) 1.26f else 1.04f,
+        infiniteRepeatable(tween(1500, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "halo",
+    )
+
+    Box(contentAlignment = Alignment.Center) {
+        Box(
+            Modifier
+                .size(box * halo)
+                .background(FocusMint.copy(alpha = if (active) 0.18f else 0.07f), CircleShape)
+        )
+        Surface(
+            onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onClick()
+            },
+            shape = CircleShape,
+            color = Color.Transparent,
+            shadowElevation = 12.dp,
+            interactionSource = interaction,
+            modifier = Modifier.size(box).scale(scale),
+        ) {
+            Box(Modifier.background(FocusGrad), contentAlignment = Alignment.Center) {
+                Icon(icon, desc, tint = FocusInk, modifier = Modifier.size(box * 0.46f))
+            }
         }
     }
 }
 
-/** کارت صدای محیطی: ایموجی + برچسب + اسلایدر حجم وقتی فعال است. */
 @Composable
 private fun SoundCard(emoji: String, label: String, active: Boolean, volume: Float, modifier: Modifier = Modifier, onToggle: () -> Unit, onVolume: (Float) -> Unit) {
-    val interaction = remember { MutableInteractionSource() }
-    Surface(
-        shape = RoundedCornerShape(22.dp),
-        color = if (active) FocusMint.copy(alpha = 0.14f) else Color.White.copy(alpha = 0.05f),
-        border = BorderStroke(1.dp, if (active) FocusMint.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.09f)),
-        onClick = onToggle,
-        interactionSource = interaction,
-        modifier = modifier.pressScale(interaction, pressedScale = 0.96f),
-    ) {
-        Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(emoji, fontSize = 22.sp)
-            Spacer(Modifier.height(4.dp))
-            Text(label, color = if (active) FocusMint else Color.White.copy(alpha = 0.7f),
-                style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            AnimatedVisibility(visible = active) {
-                Slider(
-                    value = volume,
-                    onValueChange = onVolume,
-                    valueRange = 0f..1f,
-                    modifier = Modifier.padding(horizontal = 2.dp).fillMaxWidth(),
-                    colors = SliderDefaults.colors(
-                        thumbColor = FocusMint,
-                        activeTrackColor = FocusMint,
-                        inactiveTrackColor = Color.White.copy(alpha = 0.14f),
-                    ),
-                )
+    Surface(modifier = modifier, shape = RoundedCornerShape(22.dp),
+        color = if (active) FocusMint.copy(alpha = 0.16f) else Color.White.copy(alpha = 0.05f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (active) FocusMint.copy(alpha = 0.55f) else Color.White.copy(alpha = 0.08f)),
+        onClick = onToggle) {
+        Column(Modifier.padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(emoji, fontSize = 30.sp)
+            Spacer(Modifier.height(6.dp))
+            Text(label, color = if (active) Color.White else Color.White.copy(alpha = 0.75f), style = MaterialTheme.typography.labelLarge)
+            AnimatedVisibility(active) {
+                Slider(value = volume, onValueChange = onVolume, modifier = Modifier.height(28.dp),
+                    colors = SliderDefaults.colors(thumbColor = FocusMint, activeTrackColor = FocusMint, inactiveTrackColor = Color.White.copy(alpha = 0.2f)))
             }
         }
     }
 }
 
 /**
- * حلقهٔ تایمر: ۶۰ خط ساعت، قوس پیشرفت گرادیانی و هالهٔ تنفس.
+ * Shared timer face for the chronometer and the pomodoro.
+ *
+ * Replaces the flat single stroke circle both panels used to draw: a soft halo
+ * that brightens while the timer runs, a minute dial of sixty ticks, a dim
+ * track, and a sweep gradient progress arc. The whole face breathes slowly
+ * while running, which reads as "alive" without being distracting.
  */
 @Composable
 private fun TimerRing(
@@ -645,9 +620,10 @@ private fun TimerRing(
     ringB: Color,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val breath by animateFloatAsState(
-        if (running) 1.015f else 1f,
-        spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessLow),
+    val inf = rememberInfiniteTransition(label = "ring")
+    val breath by inf.animateFloat(
+        1f, if (running) 1.03f else 1f,
+        infiniteRepeatable(tween(2400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "breath",
     )
     val shown by animateFloatAsState(progress.coerceIn(0f, 1f), tween(500), label = "ringProgress")

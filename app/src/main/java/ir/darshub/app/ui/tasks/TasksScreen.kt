@@ -280,7 +280,7 @@ fun TasksScreen(vm: TasksViewModel = viewModel()) {
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         itemsIndexed(list, key = { _, t -> t.id }) { i, task ->
-                            Box(Modifier.animateItemPlacement(tween(320))) {
+                            Box(Modifier.animateItemPlacement()) {
                                 FadeSlideIn(i) {
                                     TaskRow(
                                         task = task,

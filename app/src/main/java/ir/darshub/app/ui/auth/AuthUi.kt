@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.StartOffset
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
@@ -100,8 +101,8 @@ import ir.darshub.app.ui.theme.pressScale
 fun AuthBackdrop(content: @Composable BoxScope.() -> Unit) {
     val cs = MaterialTheme.colorScheme
     val t = rememberInfiniteTransition(label = "authOrbs")
-    val f1 by t.animateFloat(-10f, 10f, infiniteRepeatable(tween(3600, easing = FastOutSlowInEasing), RepeatMode.Reverse, initialStartOffset = 200), label = "orbA")
-    val f2 by t.animateFloat(9f, -9f, infiniteRepeatable(tween(4200, easing = FastOutSlowInEasing), RepeatMode.Reverse, initialStartOffset = 900), label = "orbB")
+    val f1 by t.animateFloat(-10f, 10f, infiniteRepeatable(tween(3600, easing = FastOutSlowInEasing), RepeatMode.Reverse, initialStartOffset = StartOffset(200)), label = "orbA")
+    val f2 by t.animateFloat(9f, -9f, infiniteRepeatable(tween(4200, easing = FastOutSlowInEasing), RepeatMode.Reverse, initialStartOffset = StartOffset(900)), label = "orbB")
     Box(
         Modifier
             .fillMaxSize()
